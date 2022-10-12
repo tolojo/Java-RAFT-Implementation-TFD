@@ -1,9 +1,0 @@
-/**
- * 
- */
-/**
- * @author rafap
- *
- */
-module impRaft {
-}
