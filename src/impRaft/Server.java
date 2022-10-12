@@ -1,36 +1,38 @@
 package impRaft;
 
 import java.net.*;
+import java.util.Date;
 import java.io.*;
 
 public class Server {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		
-		try {
-			
-			ServerSocket ss1 = new ServerSocket(1000);
-			ServerSocket ss2 = new ServerSocket(1001);
-			ServerSocket ss3 = new ServerSocket(1002);
-			
-			Socket soc1 = ss1.accept();
-			Socket soc2 = ss2.accept();
-			Socket soc3 = ss3.accept();
-			
-			 DataInputStream dis1 = new DataInputStream(soc1.getInputStream());
-			 DataInputStream dis2 = new DataInputStream(soc2.getInputStream());
-			 DataInputStream dis3 = new DataInputStream(soc3.getInputStream());
-			 
-			 
-			 ss1.close();
-			 ss2.close();
-			 ss3.close();
-		}
-		 catch (Exception e) {
-			 
-	            System.out.println(e);
-	        }
+		int port = Integer.parseInt(args[0]);
 		
-	}
+		ServerSocket serverSocket1 = new ServerSocket(port);
+		ServerSocket serverSocket2 = new ServerSocket(port);
+		ServerSocket serverSocket3 = new ServerSocket(port);
+		 
+        try {
+ 
+            System.out.println("Server is listening on port " + port);
+ 
+            while (true) {
+                Socket socket = serverSocket1.accept();
+ 
+                System.out.println("New client connected");
+ 
+                OutputStream output = socket.getOutputStream();
+                PrintWriter writer = new PrintWriter(output, true);
+ 
+                writer.println(new Date().toString());
+            }
+ 
+        } catch (IOException ex) {
+            System.out.println("Server exception: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
 }
