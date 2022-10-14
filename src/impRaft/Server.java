@@ -25,7 +25,7 @@ public class Server {
 
         try {
             File file = new File(
-                    "C:/Users/jptor/Desktop/Mestrado/TFD/Java-RAFT-Implementation-TFD/src/impRaft/serverConfigs/ports.config");
+                    "D:/Exercicios/Java-RAFT-Implementation-TFD/src/impRaft/serverConfigs/ports.config");
             Scanner myReader = new Scanner(file);
             while (aux < serverId) {
                 data = myReader.nextLine();
