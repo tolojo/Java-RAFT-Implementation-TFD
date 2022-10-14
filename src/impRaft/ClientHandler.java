@@ -11,8 +11,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class ClientHandler extends Thread{
-    DateFormat forourdate = new SimpleDateFormat("yyyy/MM/dd");
-	DateFormat forourtime = new SimpleDateFormat("hh:mm:myserverSocket");
+    
 	final DataInputStream ournewDataInputstream;
 	final DataOutputStream ournewDataOutputstream;
 	final Socket mynewSocket;
@@ -48,26 +47,8 @@ public class ClientHandler extends Thread{
 					System.out.println("Closed");
 					break;
 				}
-				
-				// creating Date object
-				Date mynewDate = new Date();
 
-				switch (receivedString) {
 				
-					case "Date" :
-						stringToReturn = forourdate.format(mynewDate);
-						ournewDataOutputstream.writeUTF(stringToReturn);
-						break;
-						
-					case "Time" :
-						stringToReturn = forourtime.format(mynewDate);
-						ournewDataOutputstream.writeUTF(stringToReturn);
-						break;
-						
-					default:
-						ournewDataOutputstream.writeUTF("Invalid input");
-						break;
-				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
