@@ -1,0 +1,5 @@
+digraph "com.raft:impraft:jar:1.0-SNAPSHOT" { 
+	"com.raft:impraft:jar:1.0-SNAPSHOT" -> "org.openjfx:javafx:pom:20-ea+4:compile" ; 
+	"com.raft:impraft:jar:1.0-SNAPSHOT" -> "junit:junit:jar:4.11:test" ; 
+	"junit:junit:jar:4.11:test" -> "org.hamcrest:hamcrest-core:jar:1.3:test" ; 
+ } 

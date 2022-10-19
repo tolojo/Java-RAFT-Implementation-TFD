@@ -15,7 +15,7 @@ public class AppTest
     @Test
     public void shouldAnswerWithTrue()
     {
-        Server s = new Server();
+       // Server s = new Server();
         
     }
 }

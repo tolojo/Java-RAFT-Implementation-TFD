@@ -1,31 +1,45 @@
 package com.raft;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.registry.Registry;
 import java.util.Properties;
 
-public class Client implements ClientInterface{
+import com.raft.resources.serverAddress;
+
+public class Client {
+  
+    private String path;
     private String port,clusterString;
+    private serverAddress[] clusterArray;
+   
+
+
     public Client(){
+       
         init();
+        connectToServer();
     }
 
     public void init(){
         port="";clusterString="";
 		try {
 			Properties p = new Properties();
-			p.load(new FileInputStream("src/main/java/com/raft/serverConfigs/ports.ini"));
+			p.load(new FileInputStream("impraft/src/main/java/com/raft/client/config.ini"));
 
-			
-		port = p.getProperty("port");
-		clusterString = p.getProperty("cluster");
-		
-
+            String[] clusterString = p.getProperty("cluster").split(";");
+			clusterArray = new serverAddress[clusterString.length];
+			for (int i = 0; i < clusterString.length; i++) {
+				String[] splited = clusterString[i].split(":");
+				clusterArray[i] = new serverAddress(splited[0], Integer.parseInt(splited[1]));
+			}
    
 		} catch (IOException e) {
 			//System.err.println("Config file not found")
@@ -34,20 +48,19 @@ public class Client implements ClientInterface{
 		} 
     }
 
-   public static void main(String[] args) {
-    try {
-        ClientInterface client = (ClientInterface) Naming.lookup("rmi://" + "127.0.0.1" + ":"+ 8000 + "/server");
-        client.invokeGET();
-        System.out.println("client connected");
-    } catch (Exception e) {
-        // TODO: handle exception
-    }
-   }
-
-@Override
-public String[] invokeGET() throws RemoteException {
-    // TODO Auto-generated method stub
-    return null;
-}
+    public void connectToServer() {
+		for (int i = 0; i < clusterArray.length; i++) {
+			serverAddress address = clusterArray[i];
+			try { 
+				
+				Remote server = (Remote) Naming.lookup("rmi://" + address.getIpAddress() + ":" + address.getPort() + "/server");
+				
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				continue;
+			}
+		}
+	}
 
 }
