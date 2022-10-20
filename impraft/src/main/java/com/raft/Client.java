@@ -19,11 +19,13 @@ public class Client {
     private String path;
     private String port,clusterString;
     private serverAddress[] clusterArray;
+	private String clientid;
    
 
 
     public Client(){
-       
+
+		clientid = serverAddress.getLocalIp();
         init();
         connectToServer();
     }
@@ -32,7 +34,7 @@ public class Client {
         port="";clusterString="";
 		try {
 			Properties p = new Properties();
-			p.load(new FileInputStream("impraft/src/main/java/com/raft/client/config.ini"));
+			p.load(new FileInputStream("src/main/java/com/raft/client/config.ini"));
 
             String[] clusterString = p.getProperty("cluster").split(";");
 			clusterArray = new serverAddress[clusterString.length];
@@ -61,6 +63,24 @@ public class Client {
 				continue;
 			}
 		}
+
+		
+	}
+
+	public String request(String message, String label, serverAddress serverId){
+		
+
+			try { 
+				
+				Invoke server = (Remote) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
+				System.out.println(server.response(message,serverId, label));
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				
+			}
+		
+			return message;
 	}
 
 }

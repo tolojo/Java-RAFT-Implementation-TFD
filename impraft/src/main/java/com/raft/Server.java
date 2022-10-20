@@ -24,7 +24,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-public class Server implements Remote, Serializable{ 
+public class Server implements Remote,Invoke, Serializable{ 
     public static final String CONFIG_INI = "config.ini";
     private String port,clusterString;
     private ExecutorService  executor;
@@ -65,6 +65,17 @@ public class Server implements Remote, Serializable{
 		registry.bind("rmi://"+id.getIpAddress()+":"+id.getPort()+"/server", (Remote)server);
 		Naming.rebind("rmi://"+id.getIpAddress()+":"+id.getPort()+"/server", (Remote)server);
 		System.out.println(id.getIpAddress()+":"+id.getPort()+" connected");
+	}
+
+	public ServerResponse response(String message, serverAddress clientid, String label) throws RemoteException{
+
+		try{
+			return Invoke.getInvoke(message,clientid,label);
+			}
+		catch (Exception e){
+			System.out.println(e);
+		}
+		
 	}
 	
 
