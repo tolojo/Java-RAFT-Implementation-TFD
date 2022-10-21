@@ -72,7 +72,7 @@ public class Client {
 
 			try { 
 				
-				Invoke server = (Remote) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
+				ClientInterface server = (ClientInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
 				System.out.println(server.response(message,serverId, label));
 				
 			} catch (Exception e) {
