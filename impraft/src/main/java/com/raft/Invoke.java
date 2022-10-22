@@ -3,12 +3,11 @@ package com.raft;
 import java.rmi.*;
 import java.rmi.server.*;
 
-import com.raft.resources.serverAddress;
 
-
-public class Invoke extends UnicastRemoteObject implements ClientInterface {
+public class Invoke extends UnicastRemoteObject implements ServerInterface {
 
         private String message;
+
         public Invoke(String msg) throws RemoteException{
                 message = msg;
         }

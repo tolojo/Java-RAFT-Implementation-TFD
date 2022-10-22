@@ -67,20 +67,20 @@ public class Client {
 		
 	}
 
-	public String request(String message, String label, serverAddress serverId){
+	public void request(serverAddress serverId){
 		
 
 			try { 
 				
-				ClientInterface server = (ClientInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
-				System.out.println(server.response(message,serverId, label));
+				ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
+				System.out.println(request.send());
 				
 			} catch (Exception e) {
 				e.printStackTrace();
 				
 			}
 		
-			return message;
+
 	}
 
 }
