@@ -31,8 +31,16 @@ public class Server implements ServerInterface, Remote, Serializable{
 	private serverAddress id;
 	private ExecutorService  connectorService = Executors.newFixedThreadPool(1);
 	private String path;
+	private ArrayList<String> exception = new ArrayList<String>();
 
+
+
+	private ArrayList<String> wholeMessage = new ArrayList<String>();
+	
+	
     public Server(String path){
+		String placeholder = "";
+		wholeMessage.add(placeholder);
 		this.path = path;
         init();
     }
@@ -67,19 +75,30 @@ public class Server implements ServerInterface, Remote, Serializable{
 		System.out.println(id.getIpAddress()+":"+id.getPort()+" connected");
 	}
 
-	public String send () {
-
+	public ArrayList<String> invokeRPC (ArrayList<String> message,String newMsg, String label) {
 		try{
-				Invoke robj =  new Invoke ("message");
-				Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server", robj);
-				return robj.send();
+			System.out.println(label);
+			
+			
+				if(label.equals("GET")){
+					return wholeMessage;
+				}
+				
+				 if(label.equals("ADD")){
+					Invoke invoke =  new Invoke ();
+					Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server", invoke);
+					
+					wholeMessage = invoke.invokeRPC(wholeMessage,newMsg, label);
+					
+					return wholeMessage;
+				}
+				
 			}
 		catch (Exception e){
 			System.out.println(e);
-			return "Ficheiro nao encontrado";
+			return wholeMessage;
 		}
-		
-		
+		return wholeMessage;
 	}
 	
 

@@ -10,6 +10,7 @@ import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import com.raft.resources.serverAddress;
@@ -20,7 +21,7 @@ public class Client {
     private String port,clusterString;
     private serverAddress[] clusterArray;
 	private String clientid;
-   
+	private ArrayList<String> wholeMessage = new ArrayList<String>();
 
 
     public Client(){
@@ -67,14 +68,17 @@ public class Client {
 		
 	}
 
-	public void request(serverAddress serverId){
-		
-
+	public void request(serverAddress serverId,String label, String msg){
 			try { 
 				
 				ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
-				System.out.println(request.send());
-				
+				if(wholeMessage ==null){
+					 wholeMessage = request.invokeRPC(null, msg,label);
+					 
+				}
+				else {wholeMessage = request.invokeRPC(wholeMessage, msg,label);
+					}
+					System.out.println(wholeMessage);
 			} catch (Exception e) {
 				e.printStackTrace();
 				
