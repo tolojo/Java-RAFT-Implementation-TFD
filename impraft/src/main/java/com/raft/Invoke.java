@@ -15,12 +15,13 @@ public class Invoke extends UnicastRemoteObject implements ServerInterface {
         private String output2 = "String already in the message";
         boolean flag = false;
         public Invoke() throws RemoteException{
-        }
-        public ArrayList<String> invokeRPC(ArrayList<String> oldMessage,String msg, String label) throws RemoteException {
-                System.out.println(label);
                 exception.add(output);
                 responseAdded.add(output1);
                 responseAlreadyAdded.add(output2);
+        }
+        public ArrayList<String> invokeRPC(ArrayList<String> oldMessage,String msg, String label) throws RemoteException {
+                System.out.println(label);
+               
                 if (label.equals("ADD")){
                         for(int i=0 ; i<oldMessage.size() ; i++){
                                 if(oldMessage.get(i) == msg){

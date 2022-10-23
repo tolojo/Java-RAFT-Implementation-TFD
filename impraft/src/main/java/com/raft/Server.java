@@ -81,24 +81,26 @@ public class Server implements ServerInterface, Remote, Serializable{
 			
 			
 				if(label.equals("GET")){
-					return wholeMessage;
-				}
-				
-				 if(label.equals("ADD")){
-					Invoke invoke =  new Invoke ();
-					Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server", invoke);
 					
+				}
+				System.out.println("teste1");
+				 if(label.equals("ADD")){
+					System.out.println("teste2");
+					Invoke invoke =  new Invoke ();
+					Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server/rpc", invoke);	
+
 					wholeMessage = invoke.invokeRPC(wholeMessage,newMsg, label);
 					
-					return wholeMessage;
+					
+					
 				}
-				
+				return wholeMessage;
 			}
 		catch (Exception e){
 			System.out.println(e);
 			return wholeMessage;
 		}
-		return wholeMessage;
+		
 	}
 	
 
