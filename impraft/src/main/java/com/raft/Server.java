@@ -33,7 +33,7 @@ public class Server implements ServerInterface, Remote, Serializable{
 	private ExecutorService  connectorService = Executors.newFixedThreadPool(1);
 	private String path;
 	private ArrayList<String> exception = new ArrayList<String>();
-
+	ArrayList<ArrayList> responses = new ArrayList<>();
 
 
 	private ArrayList<String> wholeMessage = new ArrayList<String>();
@@ -100,24 +100,31 @@ public class Server implements ServerInterface, Remote, Serializable{
 
 
 	public String quorumInvokeRPC(serverAddress[] servers,String label, String data) throws RemoteException {
+		float respostas = 0;
 		
-		 ArrayList<ArrayList> aux = new ArrayList<>();
 		try {
 			System.out.println(servers);
 			
 			for(int i=0 ; i<servers.length ; i++){
 				ServerInterface server = (ServerInterface) Naming.lookup("rmi://" + servers[i].getIpAddress() + ":" + servers[i].getPort() + "/server");
-				aux.add(server.invokeRPC(wholeMessage,label, data));
+				responses.add(server.invokeRPC(wholeMessage, data, label));
 			}
 			
-			for (int j = 0; j < aux.size(); j++){
-				ArrayList<String> auxi = new ArrayList<>();
-				auxi = aux.get(j);
-				for(int k = 0; k < auxi.size(); k++){
-					if(auxi.get(k) == data){
-						return "Mensagem não adicionada";
+			for (int j = 0; j < responses.size(); j++){
+				ArrayList<String> aux = new ArrayList<>();
+				aux = responses.get(j);
+				for(int k = 0; k < aux.size(); k++){
+					if(aux.get(k).equals(data)){
+						respostas = respostas + 1;
 					}
-				}
+			}
+			System.out.println(respostas);
+
+			if(respostas < (servers.length / 2) - 1){
+				quorumInvokeRPC(servers, label, data);
+
+			}
+
 		}
 			
 			
