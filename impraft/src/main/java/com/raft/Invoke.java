@@ -4,6 +4,8 @@ import java.rmi.*;
 import java.rmi.server.*;
 import java.util.ArrayList;
 
+import com.raft.resources.serverAddress;
+
 
 public class Invoke extends UnicastRemoteObject implements ServerInterface {
 
@@ -43,6 +45,22 @@ public class Invoke extends UnicastRemoteObject implements ServerInterface {
                         return oldMessage;
                 }
                 return oldMessage;
-               
+        }
+
+        public String quorumInvokeRPC(serverAddress[] server,String msg, String label) {
+                System.out.println(label);
+               String success = "Successfuly addeed string";
+              
+              	
+
+                    return "String added to the quorum";
+                     
+                   
+          
+                
+                
+                
+             
+                
         }
 }

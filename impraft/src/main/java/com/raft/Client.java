@@ -50,22 +50,20 @@ public class Client {
 			e.printStackTrace();
 		} 
     }
+	public serverAddress[] getClusterArray(){
+		return clusterArray;
+	}
 
     public void connectToServer() {
 		for (int i = 0; i < clusterArray.length; i++) {
 			serverAddress address = clusterArray[i];
-			try { 
-				
+			try { 	
 				Remote server = (Remote) Naming.lookup("rmi://" + address.getIpAddress() + ":" + address.getPort() + "/server");
-				
-				
 			} catch (Exception e) {
 				e.printStackTrace();
 				continue;
 			}
 		}
-
-		
 	}
 
 	public void request(serverAddress serverId,String label, String msg){
@@ -74,7 +72,6 @@ public class Client {
 				ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
 				if(wholeMessage ==null){
 					 wholeMessage = request.invokeRPC(null, msg,label);
-					 
 				}
 				else {wholeMessage = request.invokeRPC(wholeMessage, msg,label);
 					}
@@ -83,8 +80,19 @@ public class Client {
 				e.printStackTrace();
 				
 			}
-		
-
 	}
+	public void requestQuorum(serverAddress[] serverCluster,String label, String msg){
+		try { 
+
+			ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverCluster[1].getIpAddress() + ":" + serverCluster[1].getPort() + "/server");
+			request.quorumInvokeRPC(serverCluster, label, msg);
+		
+		} catch (Exception e) {
+			e.printStackTrace();
+			
+		}
+	
+
+}
 
 }

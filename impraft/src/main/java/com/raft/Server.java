@@ -27,6 +27,7 @@ import java.rmi.server.UnicastRemoteObject;
 public class Server implements ServerInterface, Remote, Serializable{ 
     public static final String CONFIG_INI = "config.ini";
     private String port,clusterString;
+
     private ExecutorService  executor;
 	private serverAddress id;
 	private ExecutorService  connectorService = Executors.newFixedThreadPool(1);
@@ -78,21 +79,15 @@ public class Server implements ServerInterface, Remote, Serializable{
 	public ArrayList<String> invokeRPC (ArrayList<String> message,String newMsg, String label) {
 		try{
 			System.out.println(label);
-			
-			
 				if(label.equals("GET")){
-					
+					return wholeMessage;
 				}
-				System.out.println("teste1");
 				 if(label.equals("ADD")){
-					System.out.println("teste2");
 					Invoke invoke =  new Invoke ();
 					Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server/rpc", invoke);	
 
 					wholeMessage = invoke.invokeRPC(wholeMessage,newMsg, label);
-					
-					
-					
+					return wholeMessage;
 				}
 				return wholeMessage;
 			}
@@ -101,6 +96,22 @@ public class Server implements ServerInterface, Remote, Serializable{
 			return wholeMessage;
 		}
 		
+	}
+
+
+	public String quorumInvokeRPC(serverAddress[] servers,String label, String data) {
+		try {
+			System.out.println(servers);
+
+
+			Invoke invoke =  new Invoke ();
+			Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server/quorumRpc", invoke);	
+			invoke.quorumInvokeRPC(servers,label, data);
+			return "";
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "";
 	}
 	
 

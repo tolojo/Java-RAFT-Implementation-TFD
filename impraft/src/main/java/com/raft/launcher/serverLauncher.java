@@ -14,9 +14,6 @@ public class serverLauncher {
 				case "-path": {
 					root = args[i+1];
 				}
-			//	case "-monitor":{
-			//		monitorMode = true;
-			//	}
 			}
 		}
 		if(root.isBlank())
