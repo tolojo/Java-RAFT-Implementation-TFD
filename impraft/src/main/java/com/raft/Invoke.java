@@ -47,20 +47,20 @@ public class Invoke extends UnicastRemoteObject implements ServerInterface {
                 return oldMessage;
         }
 
-        public String quorumInvokeRPC(serverAddress[] server,String msg, String label) {
+        public String quorumInvokeRPC(serverAddress[] server,String msg, String label) throws RemoteException {
                 System.out.println(label);
                String success = "Successfuly addeed string";
               
-              	
+              	if (label.equals("ADD")){
+                        for(int i=0 ; i<server.length ; i++){
+                               
+                        }
+                       
+                }
 
                     return "String added to the quorum";
-                     
-                   
-          
-                
-                
-                
-             
                 
         }
+        
 }
+
