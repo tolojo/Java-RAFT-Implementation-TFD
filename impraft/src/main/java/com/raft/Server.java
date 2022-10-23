@@ -101,20 +101,24 @@ public class Server implements ServerInterface, Remote, Serializable{
 
 	public String quorumInvokeRPC(serverAddress[] servers,String label, String data) throws RemoteException {
 		
-		 ArrayList<String> aux = new ArrayList<String>();
+		 ArrayList<ArrayList> aux = new ArrayList<>();
 		try {
 			System.out.println(servers);
 			
 			for(int i=0 ; i<servers.length ; i++){
 				ServerInterface server = (ServerInterface) Naming.lookup("rmi://" + servers[i].getIpAddress() + ":" + servers[i].getPort() + "/server");
-				aux = server.invokeRPC(wholeMessage,label, data);
-				
-		 }
-		 for (int j=0; j < aux.size() ; j++){
-			if(aux[j] == data ){
-				flag = true;
+				aux.add(server.invokeRPC(wholeMessage,label, data));
+			}
+			
+			for (int j = 0; j < aux.size(); j++){
+				ArrayList<String> auxi = new ArrayList<>();
+				auxi = aux.get(j);
+				for(int k = 0; k < auxi.size(); k++){
+					if(auxi.get(k) == data){
+						return "Mensagem não adicionada";
+					}
+				}
 		}
-		 }
 			
 			
 			return "";

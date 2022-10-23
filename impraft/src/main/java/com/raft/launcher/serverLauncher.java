@@ -2,7 +2,7 @@ package com.raft.launcher;
 
 import com.raft.Server;
 /*
- *-path impraft/src/main/java/com/raft/server0
+ *-path src/main/java/com/raft/server0
  */
 public class serverLauncher {
 	
