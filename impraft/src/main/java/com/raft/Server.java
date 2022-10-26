@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -101,6 +102,8 @@ public class Server implements ServerInterface, Remote, Serializable{
 
 	public String quorumInvokeRPC(serverAddress[] servers,String label, String data) throws RemoteException {
 		float respostas = 0;
+		BlockingQueue<String> queue = new BlockingQueue();
+		
 		
 		try {
 			System.out.println(servers);
@@ -108,7 +111,9 @@ public class Server implements ServerInterface, Remote, Serializable{
 			for(int i=0 ; i<servers.length ; i++){
 				ServerInterface server = (ServerInterface) Naming.lookup("rmi://" + servers[i].getIpAddress() + ":" + servers[i].getPort() + "/server");
 				responses.add(server.invokeRPC(wholeMessage, data, label));
+
 			}
+			
 			
 			for (int j = 0; j < responses.size(); j++){
 				ArrayList<String> aux = new ArrayList<>();
@@ -118,6 +123,7 @@ public class Server implements ServerInterface, Remote, Serializable{
 						respostas = respostas + 1;
 					}
 			}
+			
 			System.out.println(respostas);
 
 			if(respostas < (servers.length / 2) - 1){
@@ -135,5 +141,4 @@ public class Server implements ServerInterface, Remote, Serializable{
 		return "";
 	}
 	
-
 }
