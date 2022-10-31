@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -79,15 +80,26 @@ public class Server implements ServerInterface, Remote, Serializable{
 
 	public ArrayList<String> invokeRPC (ArrayList<String> message,String newMsg, String label) {
 		try{
+			boolean flag = false;
 			System.out.println(label);
 				if(label.equals("GET")){
 					return wholeMessage;
 				}
 				 if(label.equals("ADD")){
-					Invoke invoke =  new Invoke ();
-					Naming.rebind("rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server/rpc", invoke);	
+					for(int i=0 ; i<wholeMessage.size() ; i++){
+						if(wholeMessage.get(i).equals(newMsg)){
+								flag = true;
+						}
+				}
 
-					wholeMessage = invoke.invokeRPC(wholeMessage,newMsg, label);
+				if(flag){
+						return wholeMessage;
+				}
+
+				else if(flag==false){
+						wholeMessage.add(newMsg);
+						return wholeMessage;
+				}
 					return wholeMessage;
 				}
 				return wholeMessage;
@@ -101,39 +113,68 @@ public class Server implements ServerInterface, Remote, Serializable{
 
 
 	public String quorumInvokeRPC(serverAddress[] servers,String label, String data) throws RemoteException {
-		float respostas = 0;
-		BlockingQueue<String> queue = new BlockingQueue();
+		BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
 		
 		
 		try {
 			System.out.println(servers);
 			
 			for(int i=0 ; i<servers.length ; i++){
-				ServerInterface server = (ServerInterface) Naming.lookup("rmi://" + servers[i].getIpAddress() + ":" + servers[i].getPort() + "/server");
-				responses.add(server.invokeRPC(wholeMessage, data, label));
-
-			}
 			
-			
-			for (int j = 0; j < responses.size(); j++){
-				ArrayList<String> aux = new ArrayList<>();
-				aux = responses.get(j);
-				for(int k = 0; k < aux.size(); k++){
-					if(aux.get(k).equals(data)){
-						respostas = respostas + 1;
+				serverAddress serverAux = servers[i];
+				new Thread(()->{
+					try {
+						
+						System.out.println(serverAux);
+						ArrayList<String> responseAux = new ArrayList<>();
+						ServerInterface server = (ServerInterface) Naming.lookup("rmi://" + serverAux.getIpAddress() + ":" + serverAux.getPort() + "/server");
+					
+						responseAux = server.invokeRPC(wholeMessage, data, label);
+						responsesQueue.enqueue(responseAux);
+						
+						
+					} catch (RemoteException e) {
+						
+						e.printStackTrace();
+					} catch (MalformedURLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (NotBoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
+
+
+				}).start();
 			}
-			
-			System.out.println(respostas);
+				
+			new Thread(()->{
+					try {
+						int responsesCount = 0;
+						ArrayList<String> entry = new ArrayList<>();
+						while(true){
+							if(responsesCount > (servers.length / 2)){
+								System.out.println("Respostas recolhidas");
+								Thread.interrupted();
+							}
+						entry = responsesQueue.dequeue();
+						responsesCount++;
+						
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+						
+						
 
-			if(respostas < (servers.length / 2) - 1){
-				quorumInvokeRPC(servers, label, data);
 
-			}
+				}).start();
 
-		}
-			
-			
+				
+
 			return "";
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -4,18 +4,19 @@ import java.util.*;
 
 public class BlockingQueue<E> {
 
-    public List<E> queue = new LinkedList<E>();
+    private Queue<E> queue = new ArrayDeque<E>();
 
-    public int limit = 10;
+    private  int capacity;
 
-public BlockingQueue(){
+public BlockingQueue(int c){
+    this.capacity = c;
     
 }
 
 
 public synchronized void enqueue(E item) throws InterruptedException{
     
-    while(this.queue.size() == limit){
+    while(this.queue.size() == capacity){
         wait();
     }
     if (this.queue.size() == 0){
@@ -31,10 +32,11 @@ public synchronized E dequeue() throws InterruptedException{
     while(this.queue.size() == 0){
         wait();
     }
-    if (this.queue.size() == limit){
+    if (this.queue.size() == capacity){
         notifyAll();
     }
-        return this.queue.remove(0);
+        E t = queue.remove();
+        return t;
 }
 
 }
