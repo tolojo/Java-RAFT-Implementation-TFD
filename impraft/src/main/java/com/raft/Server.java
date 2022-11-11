@@ -13,6 +13,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -45,12 +46,14 @@ public class Server
 
 	private ArrayList<String> wholeMessage = new ArrayList<String>();
 	private int term = 0;
-
+	TimoutThread timeoutThread ;
 	enum serverState {
 		FOLLOWER,
 		CANDIDATE,
 		LEADER,
 	}
+
+	
 
 	public Server(String path) {
 		term = 1;
@@ -59,10 +62,10 @@ public class Server
 		wholeMessage.add(placeholder);
 		this.path = path;
 		init();
-		timeout = randomGen.nextInt(15);
-		while (timeout<10){
-			timeout = randomGen.nextInt(15);
-		}
+		resetTimer();
+		timeoutThread = new TimoutThread(this);
+		timeoutThread.start();
+		
 	}
 
 	private void init() {
@@ -72,6 +75,7 @@ public class Server
 			Properties p = new Properties();
 			p.load(new FileInputStream(path + File.separator + CONFIG_INI));
 			String[] clusterAux = p.getProperty("cluster").split(";");
+			clusterArray = new serverAddress[clusterAux.length];
 			id = new serverAddress(
 					p.getProperty("ip"),
 					Integer.parseInt(p.getProperty("port")));
@@ -112,6 +116,9 @@ public class Server
 			String label) {
 		try {
 			resetTimer();
+			timeoutThread.interrupt();
+			timeoutThread = new TimoutThread(this);
+			timeoutThread.start();
 			boolean flag = false;
 			System.out.println(label);
 			if (label.equals("GET")) {
@@ -205,11 +212,18 @@ public class Server
 	}
 
 	private void resetTimer() {
-		timeout = 0;
+		timeout = randomGen.nextInt(15);
+		while (timeout<10){
+			timeout = randomGen.nextInt(15);
+		}
 	}
+	
 
 	public serverState getState() {
 		return currentState;
+	}
+	public void setCurrentState(serverState currentState) {
+		this.currentState = currentState;
 	}
 
 	public serverAddress[] getClusterArray() {
@@ -218,5 +232,8 @@ public class Server
 
 	public int getHeartBeatTimer(){
 		return heartBeatTimer;
+	}
+	public int getTimeOut(){
+		return timeout;
 	}
 }
