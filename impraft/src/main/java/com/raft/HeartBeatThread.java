@@ -21,7 +21,7 @@ public class HeartBeatThread extends Thread {
 			try {
 				waitUntilServerIsLeader();
 				try {
-                    server.quorumInvokeRPC(server.getClusterArray(),"","ADD");
+                    server.quorumInvokeRPC(server.getClusterArray(),"ADD","");
                 } catch (RemoteException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();

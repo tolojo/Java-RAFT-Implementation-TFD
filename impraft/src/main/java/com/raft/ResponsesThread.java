@@ -15,20 +15,25 @@ public class ResponsesThread extends Thread {
     private String    data;
     private String    label;
     private ArrayList<String>response;
+    private int currentTerm;
+    private long leaderId;
+    private int lastLogIndex;
 
 
-    public ResponsesThread(serverAddress server, ArrayList<String> wholeMessage, String data, String label){
+    public ResponsesThread(serverAddress server, ArrayList<String> wholeMessage, String data, String label,int currentTerm, long leaderId, int lastLogIndex){
         this.server = server;
         this.wholeMessage=wholeMessage;
         this.data=data;
         this.label=label;
-
+        this.currentTerm = currentTerm;
+        this.leaderId = leaderId;
+        this.lastLogIndex = lastLogIndex;
     }
     @Override
     public void run(){
         try {
             ServerInterface serverResponse = (ServerInterface) Naming.lookup("rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server");
-            response = serverResponse.invokeRPC(wholeMessage, data, label);
+            response = serverResponse.invokeRPC(wholeMessage, data, label,currentTerm,leaderId, lastLogIndex);
             responses.put(response);
 
 

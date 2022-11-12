@@ -46,8 +46,5 @@ private synchronized void waitUntilServerIsFollower() throws InterruptedExceptio
 
 	}
     
-    public void interrupt(){
-        this.interrupt();
-    }
     
 }

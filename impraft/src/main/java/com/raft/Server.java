@@ -26,214 +26,246 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class Server
-		extends Leader
-		implements ServerInterface, Remote, Serializable {
+  extends Leader
+  implements ServerInterface, Remote, Serializable {
 
-	public static final String CONFIG_INI = "config.ini";
-	private String port, clusterString, clusterAux;
-	private serverAddress[] clusterArray;
-	private ExecutorService executor;
-	private serverAddress id;
-	private ExecutorService connectorService = Executors.newFixedThreadPool(1);
-	private String path;
-	private ArrayList<String> exception = new ArrayList<String>();
-	ArrayList<ArrayList> responses = new ArrayList<>();
+  public static final String CONFIG_INI = "config.ini";
+  private String port, clusterString, clusterAux;
+  private serverAddress[] clusterArray;
+  private ExecutorService executor;
+  private serverAddress id;
+  private ExecutorService connectorService = Executors.newFixedThreadPool(1);
+  private String path;
+  private ArrayList<String> exception = new ArrayList<String>();
+  ArrayList<ArrayList> responses = new ArrayList<>();
 
-	private serverState currentState;
-	private int timeout = 0; // random timer, garantir que tomos têm um timer para se tornarem candidates
-	private Random randomGen = new Random();
-	private int heartBeatTimer = 5;
+  private serverState currentState;
+  private int timeout = 0; // random timer, garantir que tomos têm um timer para se tornarem candidates
+  private Random randomGen = new Random();
+  private int heartBeatTimer = 5;
 
-	private ArrayList<String> wholeMessage = new ArrayList<String>();
-	private int term = 0;
-	TimoutThread timeoutThread ;
-	enum serverState {
-		FOLLOWER,
-		CANDIDATE,
-		LEADER,
-	}
+  private ArrayList<String> wholeMessage = new ArrayList<String>();
+  
+  private long serverId;
+  TimoutThread timeoutThread;
+  private long leaderId;
 
-	
+  private int currentTerm;
+  private int lastLogIndex;
+  enum serverState {
+    FOLLOWER,
+    CANDIDATE,
+    LEADER,
+  }
 
-	public Server(String path) {
-		term = 1;
-		currentState = serverState.FOLLOWER;
-		String placeholder = "";
-		wholeMessage.add(placeholder);
-		this.path = path;
-		init();
-		resetTimer();
-		timeoutThread = new TimoutThread(this);
-		timeoutThread.start();
-		
-	}
+  public Server(String path) {
+    serverId = 1L;
+	System.out.println(serverId);
+    currentTerm = 0;
+    currentState = serverState.FOLLOWER;
+    String placeholder = "";
+    wholeMessage.add(placeholder);
+    this.path = path;
+    init();
+    resetTimer();
+    timeoutThread = new TimoutThread(this);
+    timeoutThread.start();
+    HeartBeatThread heartbeat = new HeartBeatThread(this);
+    heartbeat.start();
+  }
 
-	private void init() {
-		port = "";
-		clusterString = "";
-		try {
-			Properties p = new Properties();
-			p.load(new FileInputStream(path + File.separator + CONFIG_INI));
-			String[] clusterAux = p.getProperty("cluster").split(";");
-			clusterArray = new serverAddress[clusterAux.length];
-			id = new serverAddress(
-					p.getProperty("ip"),
-					Integer.parseInt(p.getProperty("port")));
-			executor = Executors.newFixedThreadPool(clusterString.split(";").length);
+  private void init() {
+    port = "";
+    clusterString = "";
+    try {
+      Properties p = new Properties();
+      p.load(new FileInputStream(path + File.separator + CONFIG_INI));
+      String[] clusterAux = p.getProperty("cluster").split(";");
+      clusterArray = new serverAddress[clusterAux.length];
+      id =
+        new serverAddress(
+          p.getProperty("ip"),
+          Integer.parseInt(p.getProperty("port"))
+        );
+      executor = Executors.newFixedThreadPool(clusterString.split(";").length);
 
-			for (int i = 0; i < clusterAux.length; i++) {
-				String[] splited = clusterAux[i].split(":");
-				clusterArray[i] = new serverAddress(splited[0], Integer.parseInt(splited[1]));
-			}
-			// Regist this server
-			registServer();
-		} catch (IOException e) {
-			System.err.println("Config file not found");
+      for (int i = 0; i < clusterAux.length; i++) {
+        String[] splited = clusterAux[i].split(":");
+        clusterArray[i] =
+          new serverAddress(splited[0], Integer.parseInt(splited[1]));
+      }
+      // Regist this server
+      registServer();
+    } catch (IOException e) {
+      System.err.println("Config file not found");
 
-			e.printStackTrace();
-		} catch (AlreadyBoundException e) {
-			e.printStackTrace();
-		}
-	}
+      e.printStackTrace();
+    } catch (AlreadyBoundException e) {
+      e.printStackTrace();
+    }
+  }
 
-	private void registServer()
-			throws RemoteException, AlreadyBoundException, AccessException, MalformedURLException {
-		Registry registry = LocateRegistry.createRegistry(id.getPort());
-		Object server = UnicastRemoteObject.exportObject(this, 0);
-		System.setProperty("java.rmi.server.hostname", "127.0.0.1");
-		registry.bind(
-				"rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server",
-				(Remote) server);
-		Naming.rebind(
-				"rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server",
-				(Remote) server);
-		System.out.println(id.getIpAddress() + ":" + id.getPort() + " connected");
-	}
+  private void registServer()
+    throws RemoteException, AlreadyBoundException, AccessException, MalformedURLException {
+    Registry registry = LocateRegistry.createRegistry(id.getPort());
+    Object server = UnicastRemoteObject.exportObject(this, 0);
+    System.setProperty("java.rmi.server.hostname", "127.0.0.1");
+    registry.bind(
+      "rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server",
+      (Remote) server
+    );
+    Naming.rebind(
+      "rmi://" + id.getIpAddress() + ":" + id.getPort() + "/server",
+      (Remote) server
+    );
+    System.out.println(id.getIpAddress() + ":" + id.getPort() + " connected");
+  }
 
-	public ArrayList<String> invokeRPC(
-			ArrayList<String> message,
-			String newMsg,
-			String label) {
-		try {
-			resetTimer();
-			timeoutThread.interrupt();
-			timeoutThread = new TimoutThread(this);
-			timeoutThread.start();
-			boolean flag = false;
-			System.out.println(label);
-			if (label.equals("GET")) {
-				return wholeMessage;
-			}
-			if (label.equals("ADD")) {
-				for (int i = 0; i < wholeMessage.size(); i++) {
-					if (wholeMessage.get(i).equals(newMsg)) {
-						flag = true;
-					}
-				}
+  public ArrayList<String> invokeRPC(
+    ArrayList<String> message,
+    String newMsg,
+    String label,
+	int term,
+	long leaderId,
+	int lastLogIndex
+  ) {
+    try {
+		this.currentTerm = term;
+		this.leaderId = leaderId;
+		this.lastLogIndex = lastLogIndex;
+      resetTimer();
+      timeoutThread.stop();
+      timeoutThread = new TimoutThread(this);
+      timeoutThread.start();
+      boolean flag = false;
+      System.out.println(label);
+      if (label.equals("GET")) {
+        return wholeMessage;
+      }
+      if (label.equals("ADD")) {
+        if (newMsg.equals("")) {
+          return message;
+        }
 
-				if (flag) {
-					return wholeMessage;
-				} else if (flag == false) {
-					wholeMessage.add(newMsg);
-					return wholeMessage;
-				}
-				return wholeMessage;
-			}
-			return wholeMessage;
-		} catch (Exception e) {
-			System.out.println(e);
-			return wholeMessage;
-		}
-	}
+        for (int i = 0; i < wholeMessage.size(); i++) {
+          if (wholeMessage.get(i).equals(newMsg)) {
+            flag = true;
+          }
+        }
 
-	public String quorumInvokeRPC(
-			serverAddress[] servers,
-			String label,
-			String data) throws RemoteException {
-		BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
+        if (flag) {
+          return wholeMessage;
+        } else if (flag == false) {
+          wholeMessage.add(newMsg);
+          return wholeMessage;
+        }
+        return wholeMessage;
+      }
+      return wholeMessage;
+    } catch (Exception e) {
+      System.out.println(e);
+      return wholeMessage;
+    }
+  }
 
-		try {
-			System.out.println(servers);
+  public String quorumInvokeRPC(
+    serverAddress[] servers,
+    String label,
+    String data
+  ) throws RemoteException {
+    BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
 
-			for (int i = 0; i < servers.length; i++) {
-				serverAddress serverAux = servers[i];
-				new Thread(() -> {
-					try {
-						System.out.println(serverAux);
-						ArrayList<String> responseAux = new ArrayList<>();
-						ServerInterface server = (ServerInterface) Naming.lookup(
-								"rmi://" +
-										serverAux.getIpAddress() +
-										":" +
-										serverAux.getPort() +
-										"/server");
+    try {
+      System.out.println(servers);
 
-						responseAux = server.invokeRPC(wholeMessage, data, label);
-						responsesQueue.enqueue(responseAux);
-					} catch (RemoteException e) {
-						e.printStackTrace();
-					} catch (MalformedURLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (NotBoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				})
-						.start();
-			}
+      for (int i = 0; i < servers.length; i++) {
+        serverAddress serverAux = servers[i];
+        new Thread(() -> {
+          try {
+            System.out.println(serverAux);
+            ArrayList<String> responseAux = new ArrayList<>();
+            ServerInterface server = (ServerInterface) Naming.lookup(
+              "rmi://" + serverAux.getIpAddress() + ":" +serverAux.getPort() +  "/server"
+            );
 
-			new Thread(() -> {
-				try {
-					int responsesCount = 0;
-					ArrayList<String> entry = new ArrayList<>();
-					while (true) {
-						if (responsesCount > (servers.length / 2)) {
-							System.out.println("Respostas recolhidas");
-							Thread.interrupted();
-						}
-						entry = responsesQueue.dequeue();
-						responsesCount++;
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			})
-					.start();
+            responseAux = server.invokeRPC(wholeMessage, data, label,currentTerm,leaderId, lastLogIndex);
+            responsesQueue.enqueue(responseAux);
 
-			return "";
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return "";
-	}
+          } catch (RemoteException e) {
+            e.printStackTrace();
+          } catch (MalformedURLException e) {
+            e.printStackTrace();
+          } catch (NotBoundException e) {      
+            e.printStackTrace();
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+        })
+          .start();
+      }
 
-	private void resetTimer() {
-		timeout = randomGen.nextInt(15);
-		while (timeout<10){
-			timeout = randomGen.nextInt(15);
-		}
-	}
-	
+      new Thread(() -> {
+        try {
+          int responsesCount = 0;
+          ArrayList<String> entry = new ArrayList<>();
+          while (true) {
+            if (responsesCount > (servers.length / 2)) {
+              System.out.println("Respostas recolhidas");
+              Thread.interrupted();
+            }
+            entry = responsesQueue.dequeue();
+            responsesCount++;
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      })
+        .start();
 
-	public serverState getState() {
-		return currentState;
-	}
-	public void setCurrentState(serverState currentState) {
-		this.currentState = currentState;
-	}
+      return "";
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return "";
+  }
 
-	public serverAddress[] getClusterArray() {
-		return clusterArray;
-	}
+  private void resetTimer() {
+    timeout = randomGen.nextInt(15);
+    while (timeout < 10) {
+      timeout = randomGen.nextInt(15);
+    }
+  }
 
-	public int getHeartBeatTimer(){
-		return heartBeatTimer;
-	}
-	public int getTimeOut(){
-		return timeout;
-	}
+  public serverState getState() {
+    return currentState;
+  }
+
+  public void setCurrentState(serverState currentState) {
+    this.currentState = currentState;
+  }
+
+  public serverAddress[] getClusterArray() {
+    return clusterArray;
+  }
+
+  public int getHeartBeatTimer() {
+    return heartBeatTimer;
+  }
+
+  public int getTimeOut() {
+    return timeout;
+  }
+
+public long getLeaderId() {
+	return leaderId;
+}
+
+public int getCurrentTerm() {
+	return currentTerm;
+}
+
+public int getLastLogIndex() {
+	return lastLogIndex;
+}
+  
 }
