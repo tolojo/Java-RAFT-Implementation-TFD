@@ -16,13 +16,13 @@ public class TimoutThread extends Thread {
 
 public void run(){
     while(isRunning){
-      
        timeout = server.getTimeOut() * 1000;
        try {
         waitUntilServerIsFollower();
         sleep(timeout);
         server.setCurrentState(serverState.CANDIDATE);
-        System.out.println(server.getState());
+        server.election.goOn();
+        
       
 
     } catch (InterruptedException e) {
@@ -33,14 +33,14 @@ public void run(){
 
 }
 private synchronized void waitUntilServerIsFollower() throws InterruptedException {
-    serverState state = server.getState();
-    while(state != serverState.FOLLOWER){
-        state = server.getState();
-        
+    while(server.getState()!= serverState.FOLLOWER){
+        wait();
     }
 }
 
-
+public synchronized void goOn() {
+    notifyAll();
+}
 
 @Override
 	public synchronized void start() {

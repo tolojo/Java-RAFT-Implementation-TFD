@@ -30,7 +30,7 @@ public class ElectionThread extends Thread {
     while (isRunning) {
         try {
           waitUntilServerIsCandidate();
-          
+          System.out.println(server.getState());
           boolean responseAux;
           BlockingQueue<Boolean> responsesQueue = new BlockingQueue<>(10);
           for (int i = 0; i < server.getClusterArray().length; i++) {
@@ -50,14 +50,16 @@ public class ElectionThread extends Thread {
             try {
               int responsesCount = 0;
               boolean entry;
-              
-              while (true) {
+              boolean oneTimeRun = true;
+              while (oneTimeRun) {
                 
                 if (responsesCount > (server.getClusterArray().length/ 2)) {
                   System.out.println("Lider eleito");
                   server.setCurrentState(serverState.LEADER);
+                  server.setCurrentTerm(lastTermIndex+1);
                   server.quorumInvokeRPC("ADD","");
-                  Thread.interrupted();
+                  server.heartbeat.goOn();
+                  oneTimeRun = false;
                 }
                 entry = responsesQueue.dequeue();
                 if(entry == true){
@@ -88,15 +90,16 @@ public class ElectionThread extends Thread {
 
   private synchronized void waitUntilServerIsCandidate()
     throws InterruptedException {
-      serverState state = server.getState();
-    while (state != serverState.CANDIDATE) {
-      state = server.getState();
-      System.out.println(state + "E");
+    while (server.getState()!= serverState.CANDIDATE) {
+     wait();
       
     }
-    
-    
   }
+
+  public synchronized void goOn() {
+		notifyAll();
+	}
+
 
   @Override
   public synchronized void start() {

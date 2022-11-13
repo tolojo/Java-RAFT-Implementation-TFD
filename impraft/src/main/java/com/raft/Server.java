@@ -49,6 +49,7 @@ public class Server
   private long serverId;
   TimoutThread timeoutThread;
   ElectionThread election;
+  HeartBeatThread heartbeat;
   private long leaderId;
 
   private int currentTerm;
@@ -73,7 +74,7 @@ public class Server
     resetTimer();
     timeoutThread = new TimoutThread(this);
     timeoutThread.start();
-    HeartBeatThread heartbeat = new HeartBeatThread(this);
+    heartbeat = new HeartBeatThread(this);
     heartbeat.start();
     election = new ElectionThread(this);
     election.start();
@@ -144,10 +145,9 @@ public class Server
         leaderId = votedFor;
         votedFor = -1;
         currentTerm = termAux;
-
-
       }
-      
+      System.out.println("term: "+term);
+      System.out.println("lasIndex: "+lastLogIndex);
       resetTimer();
       timeoutThread.stop();
       timeoutThread = new TimoutThread(this);
@@ -187,15 +187,13 @@ public class Server
     String data
   ) throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
-
     try {
-      System.out.println(clusterArray);
+      
 
       for (int i = 0; i < clusterArray.length; i++) {
         serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
           try {
-            System.out.println(serverAux);
             ArrayList<String> responseAux = new ArrayList<>();
             ServerInterface server = (ServerInterface) Naming.lookup(
               "rmi://" + serverAux.getIpAddress() + ":" +serverAux.getPort() +  "/server"
@@ -259,9 +257,9 @@ public class Server
   }
 
   private void resetTimer(){
-    timeout = randomGen.nextInt(15);
+    timeout = randomGen.nextInt(20);
     while (timeout < 10) {
-      timeout = randomGen.nextInt(15);
+      timeout = randomGen.nextInt(20);
     }
   }
 
@@ -300,5 +298,7 @@ public int getLastLogIndex() {
 public long getServerId(){
   return serverId;
 }
-
+public void setCurrentTerm(int currentTerm){
+  this.currentTerm=currentTerm;
+}
 }
