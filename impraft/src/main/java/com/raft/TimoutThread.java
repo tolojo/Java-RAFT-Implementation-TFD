@@ -33,8 +33,11 @@ public void run(){
 
 }
 private synchronized void waitUntilServerIsFollower() throws InterruptedException {
-    while(server.getState() != serverState.FOLLOWER) 
-        wait();
+    serverState state = server.getState();
+    while(state != serverState.FOLLOWER){
+        state = server.getState();
+        
+    }
 }
 
 
@@ -43,8 +46,5 @@ private synchronized void waitUntilServerIsFollower() throws InterruptedExceptio
 	public synchronized void start() {
 		isRunning = true;
 		super.start();
-
 	}
-    
-    
 }

@@ -48,6 +48,7 @@ public class Server
   
   private long serverId;
   TimoutThread timeoutThread;
+  ElectionThread election;
   private long leaderId;
 
   private int currentTerm;
@@ -60,8 +61,9 @@ public class Server
   }
 
   public Server(String path) {
+   
     serverId = 1L;
-	System.out.println(serverId);
+	
     currentTerm = 0;
     currentState = serverState.FOLLOWER;
     String placeholder = "";
@@ -73,6 +75,9 @@ public class Server
     timeoutThread.start();
     HeartBeatThread heartbeat = new HeartBeatThread(this);
     heartbeat.start();
+    election = new ElectionThread(this);
+    election.start();
+    System.out.println(this.getState());
   }
 
   private void init() {
@@ -95,6 +100,7 @@ public class Server
         clusterArray[i] =
           new serverAddress(splited[0], Integer.parseInt(splited[1]));
       }
+   
       // Regist this server
       registServer();
     } catch (IOException e) {
@@ -134,7 +140,14 @@ public class Server
 		this.currentTerm = term;
 		this.leaderId = leaderId;
 		this.lastLogIndex = lastLogIndex;
-    
+      if (votedFor == leaderId){
+        leaderId = votedFor;
+        votedFor = -1;
+        currentTerm = termAux;
+
+
+      }
+      
       resetTimer();
       timeoutThread.stop();
       timeoutThread = new TimoutThread(this);
@@ -229,21 +242,23 @@ public class Server
   }
 
   private long votedFor = -1;
- 
-  public VoteResponse requestVoteRPC(int term, long candidateId, int clastLogIndex, int lastTermIndex){
-    VoteResponse responseF = new VoteResponse(false,term);
-    VoteResponse responseV= new VoteResponse(true,term);
+  private int termAux = 0;
+  public boolean requestVoteRPC(int term, long candidateId, int clastLogIndex, int lastTermIndex){
+    boolean responseF = false;
+    boolean responseV= true;
     if(term<currentTerm){       
         return responseF;
       }
-      else if((votedFor == -1 || votedFor == candidateId) && clastLogIndex == lastLogIndex) {
-        votedFor = candidateId;    
+
+      else if(votedFor == -1 || votedFor == candidateId) if(clastLogIndex == lastLogIndex) {
+        votedFor = candidateId;  
+        termAux = term;  
         return responseV;
       }
       return responseF;
   }
 
-  private void resetTimer() {
+  private void resetTimer(){
     timeout = randomGen.nextInt(15);
     while (timeout < 10) {
       timeout = randomGen.nextInt(15);

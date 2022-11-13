@@ -8,5 +8,6 @@ public class VoteResponse {
         this.voteGranted = voteGranted;
         this.term = term;
     }
+    public VoteResponse(){}
     
 }

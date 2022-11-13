@@ -21,7 +21,7 @@ public class HeartBeatThread extends Thread {
 			try {
 				waitUntilServerIsLeader();
 				try {
-                    server.quorumInvokeRPC(server.getClusterArray(),"ADD","");
+                    server.quorumInvokeRPC("ADD","");
                 } catch (RemoteException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -36,8 +36,11 @@ public class HeartBeatThread extends Thread {
 
 
     private synchronized void waitUntilServerIsLeader() throws InterruptedException {
-		while(server.getState() != serverState.LEADER) 
-			wait();
+		serverState state = server.getState();
+		while(state != serverState.LEADER) {
+			state = server.getState();
+			System.out.println(state+ "L");
+		}
 	}
 
 
