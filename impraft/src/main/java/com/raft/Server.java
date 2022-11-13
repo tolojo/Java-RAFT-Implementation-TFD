@@ -52,6 +52,7 @@ public class Server
 
   private int currentTerm;
   private int lastLogIndex;
+  
   enum serverState {
     FOLLOWER,
     CANDIDATE,
@@ -125,14 +126,15 @@ public class Server
     ArrayList<String> message,
     String newMsg,
     String label,
-	int term,
-	long leaderId,
-	int lastLogIndex
+	  int term,
+	  long leaderId,
+	  int lastLogIndex
   ) {
     try {
 		this.currentTerm = term;
 		this.leaderId = leaderId;
 		this.lastLogIndex = lastLogIndex;
+    
       resetTimer();
       timeoutThread.stop();
       timeoutThread = new TimoutThread(this);
@@ -146,13 +148,11 @@ public class Server
         if (newMsg.equals("")) {
           return message;
         }
-
         for (int i = 0; i < wholeMessage.size(); i++) {
           if (wholeMessage.get(i).equals(newMsg)) {
             flag = true;
           }
         }
-
         if (flag) {
           return wholeMessage;
         } else if (flag == false) {
@@ -169,17 +169,17 @@ public class Server
   }
 
   public String quorumInvokeRPC(
-    serverAddress[] servers,
+    
     String label,
     String data
   ) throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
 
     try {
-      System.out.println(servers);
+      System.out.println(clusterArray);
 
-      for (int i = 0; i < servers.length; i++) {
-        serverAddress serverAux = servers[i];
+      for (int i = 0; i < clusterArray.length; i++) {
+        serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
           try {
             System.out.println(serverAux);
@@ -203,13 +203,12 @@ public class Server
         })
           .start();
       }
-
       new Thread(() -> {
         try {
           int responsesCount = 0;
           ArrayList<String> entry = new ArrayList<>();
           while (true) {
-            if (responsesCount > (servers.length / 2)) {
+            if (responsesCount > (clusterArray.length / 2)) {
               System.out.println("Respostas recolhidas");
               Thread.interrupted();
             }
@@ -227,6 +226,21 @@ public class Server
       e.printStackTrace();
     }
     return "";
+  }
+
+  private long votedFor = -1;
+ 
+  public VoteResponse requestVoteRPC(int term, long candidateId, int clastLogIndex, int lastTermIndex){
+    VoteResponse responseF = new VoteResponse(false,term);
+    VoteResponse responseV= new VoteResponse(true,term);
+    if(term<currentTerm){       
+        return responseF;
+      }
+      else if((votedFor == -1 || votedFor == candidateId) && clastLogIndex == lastLogIndex) {
+        votedFor = candidateId;    
+        return responseV;
+      }
+      return responseF;
   }
 
   private void resetTimer() {
@@ -267,5 +281,9 @@ public int getCurrentTerm() {
 public int getLastLogIndex() {
 	return lastLogIndex;
 }
-  
+
+public long getServerId(){
+  return serverId;
+}
+
 }
