@@ -42,7 +42,7 @@ public class Server
   private serverState currentState;
   private int timeout = 0; // random timer, garantir que tomos têm um timer para se tornarem candidates
   private Random randomGen = new Random();
-  private int heartBeatTimer = 5;
+  private int heartBeatTimer = 3;
 
   private ArrayList<String> wholeMessage = new ArrayList<String>();
   
@@ -64,7 +64,6 @@ public class Server
   public Server(String path) {
    
     serverId = 1L;
-	
     currentTerm = 0;
     lastLogIndex = 1;
     currentState = serverState.FOLLOWER;
@@ -80,6 +79,26 @@ public class Server
     election = new ElectionThread(this);
     election.start();
     System.out.println(this.getState());
+  }
+
+  public Server(String path,int currentTerm, int lastLogIndex) {
+    serverId = 1L;
+    this.path = path;
+    this.currentTerm = currentTerm;
+    this.lastLogIndex = lastLogIndex;
+    currentState = serverState.FOLLOWER;
+    String placeholder = "";
+    wholeMessage.add(placeholder);
+    init();
+    resetTimer();
+    timeoutThread = new TimoutThread(this);
+    timeoutThread.start();
+    heartbeat = new HeartBeatThread(this);
+    heartbeat.start();
+    election = new ElectionThread(this);
+    election.start();
+    System.out.println(this.getState());
+    
   }
 
   private void init() {
