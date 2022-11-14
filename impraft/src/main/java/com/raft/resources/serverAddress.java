@@ -13,6 +13,19 @@ public class serverAddress implements Serializable {
     	
         
 
+        public serverAddress() {
+            ipAddress = "";
+            port=0;
+        }
+
+        public void setIpAddress(String ipAddress) {
+            this.ipAddress = ipAddress;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
         public serverAddress(String ipAddress, int port) {
             this.ipAddress=ipAddress;
             this.port=port;

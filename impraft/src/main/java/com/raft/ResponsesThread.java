@@ -16,17 +16,17 @@ public class ResponsesThread extends Thread {
     private String    label;
     private ArrayList<String>response;
     private int currentTerm;
-    private long leaderId;
+    private serverAddress leaderId;
     private int lastLogIndex;
 
 
-    public ResponsesThread(serverAddress server, ArrayList<String> wholeMessage, String data, String label,int currentTerm, long leaderId, int lastLogIndex){
+    public ResponsesThread(serverAddress server, ArrayList<String> wholeMessage, String data, String label,int currentTerm, serverAddress leaderId, int lastLogIndex){
         this.server = server;
         this.wholeMessage=wholeMessage;
         this.data=data;
         this.label=label;
         this.currentTerm = currentTerm;
-        this.leaderId = leaderId;
+        this.leaderId = new serverAddress();
         this.lastLogIndex = lastLogIndex;
     }
     @Override

@@ -50,7 +50,7 @@ public class Server
   TimoutThread timeoutThread;
   ElectionThread election;
   HeartBeatThread heartbeat;
-  private long leaderId;
+  private serverAddress leaderId;
 
   private int currentTerm;
   private int lastLogIndex;
@@ -66,6 +66,7 @@ public class Server
     serverId = 1L;
 	
     currentTerm = 0;
+    lastLogIndex = 1;
     currentState = serverState.FOLLOWER;
     String placeholder = "";
     wholeMessage.add(placeholder);
@@ -134,7 +135,7 @@ public class Server
     String newMsg,
     String label,
 	  int term,
-	  long leaderId,
+	  serverAddress leaderId,
 	  int lastLogIndex
   ) {
     try {
@@ -143,7 +144,7 @@ public class Server
 		this.lastLogIndex = lastLogIndex;
       if (votedFor == leaderId){
         leaderId = votedFor;
-        votedFor = -1;
+        votedFor = new serverAddress();
         currentTerm = termAux;
       }
       System.out.println("term: "+term);
@@ -188,12 +189,25 @@ public class Server
   ) throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
     try {
-      
+            if(data != ""){
+              for(int j =0; j< wholeMessage.size();j++ ){
+                if(data.equals(wholeMessage.get(j))){
+                    return "A mensagem ja existe";
+                }  
+            }
+            }
 
+            else{
+              if(!data.equals("")){
+                lastLogIndex = lastLogIndex +1;
+                System.out.println("lastLogIndex atualizado");
+              }
+        
       for (int i = 0; i < clusterArray.length; i++) {
         serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
           try {
+
             ArrayList<String> responseAux = new ArrayList<>();
             ServerInterface server = (ServerInterface) Naming.lookup(
               "rmi://" + serverAux.getIpAddress() + ":" +serverAux.getPort() +  "/server"
@@ -233,22 +247,22 @@ public class Server
         .start();
 
       return "";
-    } catch (Exception e) {
+    }} catch (Exception e) {
       e.printStackTrace();
     }
     return "";
   }
 
-  private long votedFor = -1;
+  private serverAddress votedFor = new serverAddress();
   private int termAux = 0;
-  public boolean requestVoteRPC(int term, long candidateId, int clastLogIndex, int lastTermIndex){
+  public boolean requestVoteRPC(int term, serverAddress candidateId, int clastLogIndex, int lastTermIndex){
     boolean responseF = false;
     boolean responseV= true;
     if(term<currentTerm){       
         return responseF;
       }
 
-      else if(votedFor == -1 || votedFor == candidateId) if(clastLogIndex == lastLogIndex) {
+      else if(votedFor.getPort() == 0 || votedFor == candidateId) if(clastLogIndex == lastLogIndex) {
         votedFor = candidateId;  
         termAux = term;  
         return responseV;
@@ -283,7 +297,7 @@ public class Server
     return timeout;
   }
 
-public long getLeaderId() {
+public serverAddress getLeaderId() {
 	return leaderId;
 }
 
@@ -300,5 +314,9 @@ public long getServerId(){
 }
 public void setCurrentTerm(int currentTerm){
   this.currentTerm=currentTerm;
+}
+
+public void setLastLogIndex(int lastLogIndex){
+  this.lastLogIndex=lastLogIndex;
 }
 }

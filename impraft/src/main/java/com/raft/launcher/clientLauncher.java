@@ -7,8 +7,8 @@ public class clientLauncher {
     
 	public static void main(String[] args) {
 		Client c = new Client();
-		serverAddress s = new serverAddress("127.0.0.1", 8000);
-		c.request(s, "GET", "a3c1231");
-		//c.requestQuorum(c.getClusterArray(), "ADD", "a3c1");
+		serverAddress s = new serverAddress("127.0.0.1", 8001);
+		//c.request(s, "GET", "a3c1231");
+		c.requestQuorum(s, "ADD", "a3c1");
 	}
 }

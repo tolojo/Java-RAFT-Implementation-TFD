@@ -35,7 +35,7 @@ public class Client {
         port="";clusterString="";
 		try {
 			Properties p = new Properties();
-			p.load(new FileInputStream("src/main/java/com/raft/client/config.ini"));
+			p.load(new FileInputStream("impraft/src/main/java/com/raft/client/config.ini"));
 
             String[] clusterString = p.getProperty("cluster").split(";");
 			clusterArray = new serverAddress[clusterString.length];
@@ -66,7 +66,7 @@ public class Client {
 		}
 	}
 
-	public void request(serverAddress serverId,String label, String msg){
+	/*public void request(serverAddress serverId,String label, String msg){
 			try { 
 				
 				ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
@@ -80,12 +80,12 @@ public class Client {
 				e.printStackTrace();
 				
 			}
-	}
-	public void requestQuorum(serverAddress[] serverCluster,String label, String msg){
+	}*/
+	public void requestQuorum(serverAddress serverCluster,String label, String msg){
 		try { 
 
-			ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverCluster[1].getIpAddress() + ":" + serverCluster[1].getPort() + "/server");
-			request.quorumInvokeRPC(serverCluster, label, msg);
+			ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverCluster.getIpAddress() + ":" + serverCluster.getPort() + "/server");
+			request.quorumInvokeRPC(label, msg);
 		
 		} catch (Exception e) {
 			e.printStackTrace();

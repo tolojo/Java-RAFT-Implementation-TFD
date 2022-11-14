@@ -10,8 +10,8 @@ import com.raft.resources.serverAddress;
 
 public interface ServerInterface extends Remote{
     public ArrayList<String> invokeRPC(ArrayList<String> oldMessage, String msg, String label,int term,
-	long leaderId,
+	serverAddress leaderId,
 	int lastLogIndex) throws RemoteException;
     public String quorumInvokeRPC(String label, String data) throws RemoteException;
-    public boolean requestVoteRPC(int term, long candidateId, int lastLogIndex, int lastTermIndex) throws RemoteException;
+    public boolean requestVoteRPC(int term, serverAddress candidateId, int lastLogIndex, int lastTermIndex) throws RemoteException;
 }

@@ -15,13 +15,13 @@ public class ElectionThread extends Thread {
   private boolean isRunning;
 
  
-  private long candidateId;
+  private serverAddress candidateId;
   private int clastLogIndex;
   private int lastTermIndex;
 
   public ElectionThread(Server server) {
     this.server = server;
-    candidateId = server.getServerId();
+    candidateId = new serverAddress();
     clastLogIndex = server.getLastLogIndex();
     lastTermIndex = server.getCurrentTerm();
   }
@@ -57,6 +57,7 @@ public class ElectionThread extends Thread {
                   System.out.println("Lider eleito");
                   server.setCurrentState(serverState.LEADER);
                   server.setCurrentTerm(lastTermIndex+1);
+                  
                   server.quorumInvokeRPC("ADD","");
                   server.heartbeat.goOn();
                   oneTimeRun = false;
