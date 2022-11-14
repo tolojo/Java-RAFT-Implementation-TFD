@@ -76,8 +76,8 @@ public class Server
     timeoutThread.start();
     heartbeat = new HeartBeatThread(this);
     heartbeat.start();
-    election = new ElectionThread(this);
-    election.start();
+    /*election = new ElectionThread(this);
+    election.start(); */
     System.out.println(this.getState());
   }
 
@@ -203,16 +203,18 @@ public class Server
   }
 
   public String quorumInvokeRPC(
-    
     String label,
     String data
   ) throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
     try {
+      System.out.println(data);
+      
             if(!data.equals("")){
-              for(int j =0; j< wholeMessage.size();j++ ){
+             
+          for(int j =0; j< wholeMessage.size();j++ ){
                 if(data.equals(wholeMessage.get(j))){
-                    return "A mensagem ja existe";
+                   
                 }  
             }
             setLastLogIndex(lastLogIndex+1);
@@ -276,7 +278,7 @@ public class Server
         return responseF;
       }
 
-      else if(votedFor.getPort() == 0 || votedFor == candidateId) if(clastLogIndex == lastLogIndex) {
+      else if(votedFor.getPort() == 0 || votedFor == candidateId) {if(clastLogIndex == lastLogIndex) {
         votedFor = candidateId;  
         termAux = term; 
         System.out.println("vote granted"); 
@@ -284,6 +286,8 @@ public class Server
       }
       return responseF;
   }
+  return responseF;
+}
 
   private void resetTimer(){
     timeout = randomGen.nextInt(20);

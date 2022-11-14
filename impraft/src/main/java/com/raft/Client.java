@@ -81,10 +81,10 @@ public class Client {
 				
 			}
 	}*/
-	public void requestQuorum(serverAddress serverCluster,String label, String msg){
+	public void requestQuorum(serverAddress server,String label, String msg){
 		try { 
 
-			ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverCluster.getIpAddress() + ":" + serverCluster.getPort() + "/server");
+			ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server");
 			request.quorumInvokeRPC(label, msg);
 		
 		} catch (Exception e) {

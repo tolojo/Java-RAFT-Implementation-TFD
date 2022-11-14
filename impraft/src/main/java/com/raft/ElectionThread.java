@@ -8,6 +8,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.concurrent.Future;
 
 public class ElectionThread extends Thread {
 
@@ -30,22 +31,30 @@ public class ElectionThread extends Thread {
     while (isRunning) {
         try {
           waitUntilServerIsCandidate();
+          System.out.println("entrei na election");
           System.out.println(server.getState());
           boolean responseAux;
           BlockingQueue<Boolean> responsesQueue = new BlockingQueue<>(10);
           for (int i = 0; i < server.getClusterArray().length; i++) {
             serverAddress serverAux = server.getClusterArray()[i];
-            ServerInterface server = (ServerInterface) Naming.lookup(
-              "rmi://" +
-              serverAux.getIpAddress() +
-              ":" +
-              serverAux.getPort() +
-              "/server"
-            );
+            ServerInterface serverI;
+            try {
+              serverI = (ServerInterface) Naming.lookup(
+                "rmi://" +
+                serverAux.getIpAddress() +
+                ":" +
+                serverAux.getPort() +
+                "/server"
+              );
             
-            responseAux = server.requestVoteRPC(lastTermIndex+1,candidateId,clastLogIndex,lastTermIndex);
             
+            responseAux = serverI.requestVoteRPC(lastTermIndex+1,candidateId,clastLogIndex,lastTermIndex);
             responsesQueue.enqueue(responseAux);
+          } 
+            catch (RemoteException e) {
+              e.printStackTrace();
+              continue;
+            }
           }
           new Thread(() -> {
             try {
@@ -53,11 +62,15 @@ public class ElectionThread extends Thread {
               boolean entry;
               boolean oneTimeRun = true;
               while (oneTimeRun) {
+                System.out.println(responsesCount);
                 
                 if (responsesCount > (server.getClusterArray().length/ 2)) {
                   System.out.println("Lider eleito");
                   server.setCurrentState(serverState.LEADER);
-                  server.setCurrentTerm(lastTermIndex+1);
+                  System.out.println("last term index: "+lastTermIndex);
+                  System.out.println("last term index + 1: "+lastTermIndex+1);
+                  server.setCurrentTerm(((Integer) lastTermIndex) + 1);
+                  System.out.println(server.getCurrentTerm());
                   
                   server.quorumInvokeRPC("ADD","");
                   server.heartbeat.goOn();
@@ -66,7 +79,6 @@ public class ElectionThread extends Thread {
                 entry = responsesQueue.dequeue();
                 if(entry == true){
                 responsesCount++;
-                System.out.println(responsesCount);
             }
               }
             } catch (Exception e) {
@@ -81,10 +93,8 @@ public class ElectionThread extends Thread {
       } catch (MalformedURLException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
-      } catch (RemoteException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      } catch (NotBoundException e) {
+      } 
+       catch (NotBoundException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
