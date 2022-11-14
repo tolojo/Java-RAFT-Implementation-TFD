@@ -149,6 +149,7 @@ public class Server
       }
       System.out.println("term: "+term);
       System.out.println("lasIndex: "+lastLogIndex);
+      System.out.println(newMsg);
       resetTimer();
       timeoutThread.stop();
       timeoutThread = new TimoutThread(this);
@@ -189,33 +190,27 @@ public class Server
   ) throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
     try {
-            if(data != ""){
+            if(!data.equals("")){
               for(int j =0; j< wholeMessage.size();j++ ){
                 if(data.equals(wholeMessage.get(j))){
                     return "A mensagem ja existe";
                 }  
             }
+            setLastLogIndex(lastLogIndex+1);
             }
 
-            else{
-              if(!data.equals("")){
-                lastLogIndex = lastLogIndex +1;
-                System.out.println("lastLogIndex atualizado");
-              }
+          
         
       for (int i = 0; i < clusterArray.length; i++) {
         serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
           try {
-
             ArrayList<String> responseAux = new ArrayList<>();
             ServerInterface server = (ServerInterface) Naming.lookup(
               "rmi://" + serverAux.getIpAddress() + ":" +serverAux.getPort() +  "/server"
             );
-
             responseAux = server.invokeRPC(wholeMessage, data, label,currentTerm,leaderId, lastLogIndex);
             responsesQueue.enqueue(responseAux);
-
           } catch (RemoteException e) {
             e.printStackTrace();
           } catch (MalformedURLException e) {
@@ -247,7 +242,7 @@ public class Server
         .start();
 
       return "";
-    }} catch (Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
     return "";
@@ -264,7 +259,8 @@ public class Server
 
       else if(votedFor.getPort() == 0 || votedFor == candidateId) if(clastLogIndex == lastLogIndex) {
         votedFor = candidateId;  
-        termAux = term;  
+        termAux = term; 
+        System.out.println("vote granted"); 
         return responseV;
       }
       return responseF;

@@ -35,7 +35,7 @@ public class Client {
         port="";clusterString="";
 		try {
 			Properties p = new Properties();
-			p.load(new FileInputStream("impraft/src/main/java/com/raft/client/config.ini"));
+			p.load(new FileInputStream("src/main/java/com/raft/client/config.ini"));
 
             String[] clusterString = p.getProperty("cluster").split(";");
 			clusterArray = new serverAddress[clusterString.length];

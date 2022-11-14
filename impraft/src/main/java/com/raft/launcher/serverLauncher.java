@@ -8,7 +8,6 @@ public class serverLauncher {
 	
 	public static void main(String[] args) throws Exception{
 		String root = "";
-		boolean monitorMode = false;
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i]) {
 				case "-path": {

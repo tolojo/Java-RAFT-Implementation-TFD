@@ -21,7 +21,7 @@ public class ElectionThread extends Thread {
 
   public ElectionThread(Server server) {
     this.server = server;
-    candidateId = new serverAddress();
+    candidateId = server.getLeaderId();
     clastLogIndex = server.getLastLogIndex();
     lastTermIndex = server.getCurrentTerm();
   }
@@ -42,6 +42,7 @@ public class ElectionThread extends Thread {
               serverAux.getPort() +
               "/server"
             );
+            
             responseAux = server.requestVoteRPC(lastTermIndex+1,candidateId,clastLogIndex,lastTermIndex);
             
             responsesQueue.enqueue(responseAux);
@@ -65,6 +66,7 @@ public class ElectionThread extends Thread {
                 entry = responsesQueue.dequeue();
                 if(entry == true){
                 responsesCount++;
+                System.out.println(responsesCount);
             }
               }
             } catch (Exception e) {
