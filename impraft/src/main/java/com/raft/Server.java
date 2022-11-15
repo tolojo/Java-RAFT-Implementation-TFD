@@ -45,7 +45,7 @@ public class Server
   private int heartBeatTimer = 3;
 
   private ArrayList<String> wholeMessage = new ArrayList<String>();
-  
+
   private long serverId;
   TimoutThread timeoutThread;
   ElectionThread election;
@@ -54,7 +54,7 @@ public class Server
 
   private int currentTerm;
   private int lastLogIndex;
-  
+
   enum serverState {
     FOLLOWER,
     CANDIDATE,
@@ -62,7 +62,6 @@ public class Server
   }
 
   public Server(String path) {
-   
     serverId = 1L;
     currentTerm = 0;
     lastLogIndex = 1;
@@ -81,7 +80,7 @@ public class Server
     System.out.println(this.getState());
   }
 
-  public Server(String path,int currentTerm, int lastLogIndex) {
+  public Server(String path, int currentTerm, int lastLogIndex) {
     serverId = 1L;
     this.path = path;
     this.currentTerm = currentTerm;
@@ -98,7 +97,6 @@ public class Server
     election = new ElectionThread(this);
     election.start();
     System.out.println(this.getState());
-    
   }
 
   private void init() {
@@ -121,7 +119,7 @@ public class Server
         clusterArray[i] =
           new serverAddress(splited[0], Integer.parseInt(splited[1]));
       }
-   
+
       // Regist this server
       registServer();
     } catch (IOException e) {
@@ -153,47 +151,45 @@ public class Server
     ArrayList<String> message,
     String newMsg,
     String label,
-	  int term,
-	  serverAddress leaderId,
-	  int lastLogIndex
+    int term,
+    serverAddress leaderId,
+    int lastLogIndex
   ) {
     try {
-		this.currentTerm = term;
-		this.leaderId = leaderId;
-		this.lastLogIndex = lastLogIndex;
-      if (votedFor == leaderId){
-        leaderId = votedFor;
+      if (term >= currentTerm) {
+        this.currentTerm = term;
+        this.leaderId = leaderId;
+        this.lastLogIndex = lastLogIndex;
         votedFor = new serverAddress();
-        currentTerm = termAux;
-      }
-      System.out.println("term: "+term);
-      System.out.println("lasIndex: "+lastLogIndex);
-      System.out.println(newMsg);
-      resetTimer();
-      timeoutThread.stop();
-      timeoutThread = new TimoutThread(this);
-      timeoutThread.start();
-      boolean flag = false;
-      System.out.println(label);
-      if (label.equals("GET")) {
-        return wholeMessage;
-      }
-      if (label.equals("ADD")) {
-        if (newMsg.equals("")) {
-          return message;
+        System.out.println("term: " + term);
+        System.out.println("lasIndex: " + lastLogIndex);
+        System.out.println(newMsg);
+        resetTimer();
+        timeoutThread.stop();
+        timeoutThread = new TimoutThread(this);
+        timeoutThread.start();
+        boolean flag = false;
+        System.out.println(label);
+        if (label.equals("GET")) {
+          return wholeMessage;
         }
-        for (int i = 0; i < wholeMessage.size(); i++) {
-          if (wholeMessage.get(i).equals(newMsg)) {
-            flag = true;
+        if (label.equals("ADD")) {
+          if (newMsg.equals("")) {
+            return message;
           }
-        }
-        if (flag) {
+          for (int i = 0; i < wholeMessage.size(); i++) {
+            if (wholeMessage.get(i).equals(newMsg)) {
+              flag = true;
+            }
+          }
+          if (flag) {
+            return wholeMessage;
+          } else if (flag == false) {
+            wholeMessage.add(newMsg);
+            return wholeMessage;
+          }
           return wholeMessage;
-        } else if (flag == false) {
-          wholeMessage.add(newMsg);
-          return wholeMessage;
         }
-        return wholeMessage;
       }
       return wholeMessage;
     } catch (Exception e) {
@@ -202,41 +198,46 @@ public class Server
     }
   }
 
-  public String quorumInvokeRPC(
-    String label,
-    String data
-  ) throws RemoteException {
+  public String quorumInvokeRPC(String label, String data)
+    throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
     try {
       System.out.println(data);
-      
-            if(!data.equals("")){
-             
-          for(int j =0; j< wholeMessage.size();j++ ){
-                if(data.equals(wholeMessage.get(j))){
-                   
-                }  
-            }
-            setLastLogIndex(lastLogIndex+1);
-            }
 
-          
-        
+      if (!data.equals("")) {
+        for (int j = 0; j < wholeMessage.size(); j++) {
+          if (data.equals(wholeMessage.get(j))) {}
+        }
+        setLastLogIndex(lastLogIndex + 1);
+      }
+
       for (int i = 0; i < clusterArray.length; i++) {
         serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
           try {
             ArrayList<String> responseAux = new ArrayList<>();
             ServerInterface server = (ServerInterface) Naming.lookup(
-              "rmi://" + serverAux.getIpAddress() + ":" +serverAux.getPort() +  "/server"
+              "rmi://" +
+              serverAux.getIpAddress() +
+              ":" +
+              serverAux.getPort() +
+              "/server"
             );
-            responseAux = server.invokeRPC(wholeMessage, data, label,currentTerm,leaderId, lastLogIndex);
+            responseAux =
+              server.invokeRPC(
+                wholeMessage,
+                data,
+                label,
+                currentTerm,
+                leaderId,
+                lastLogIndex
+              );
             responsesQueue.enqueue(responseAux);
           } catch (RemoteException e) {
             e.printStackTrace();
           } catch (MalformedURLException e) {
             e.printStackTrace();
-          } catch (NotBoundException e) {      
+          } catch (NotBoundException e) {
             e.printStackTrace();
           } catch (InterruptedException e) {
             e.printStackTrace();
@@ -271,25 +272,30 @@ public class Server
 
   private serverAddress votedFor = new serverAddress();
   private int termAux = 0;
-  public boolean requestVoteRPC(int term, serverAddress candidateId, int clastLogIndex, int lastTermIndex){
-    boolean responseF = false;
-    boolean responseV= true;
-    if(term<currentTerm){       
-        return responseF;
-      }
 
-      else if(votedFor.getPort() == 0 || votedFor == candidateId) {if(clastLogIndex == lastLogIndex) {
-        votedFor = candidateId;  
-        termAux = term; 
-        System.out.println("vote granted"); 
+  public boolean requestVoteRPC(
+    int term,
+    serverAddress candidateId,
+    int clastLogIndex,
+    int lastTermIndex
+  ) {
+    boolean responseF = false;
+    boolean responseV = true;
+    if (term < currentTerm) {
+      return responseF;
+    } else if (votedFor.getPort() == 0 || votedFor == candidateId) {
+      if (clastLogIndex == lastLogIndex) {
+        votedFor = candidateId;
+        termAux = term;
+        System.out.println("vote granted");
         return responseV;
       }
       return responseF;
+    }
+    return responseF;
   }
-  return responseF;
-}
 
-  private void resetTimer(){
+  private void resetTimer() {
     timeout = randomGen.nextInt(20);
     while (timeout < 10) {
       timeout = randomGen.nextInt(20);
@@ -316,26 +322,27 @@ public class Server
     return timeout;
   }
 
-public serverAddress getLeaderId() {
-	return leaderId;
-}
+  public serverAddress getLeaderId() {
+    return leaderId;
+  }
 
-public int getCurrentTerm() {
-	return currentTerm;
-}
+  public int getCurrentTerm() {
+    return currentTerm;
+  }
 
-public int getLastLogIndex() {
-	return lastLogIndex;
-}
+  public int getLastLogIndex() {
+    return lastLogIndex;
+  }
 
-public long getServerId(){
-  return serverId;
-}
-public void setCurrentTerm(int currentTerm){
-  this.currentTerm=currentTerm;
-}
+  public long getServerId() {
+    return serverId;
+  }
 
-public void setLastLogIndex(int lastLogIndex){
-  this.lastLogIndex=lastLogIndex;
-}
+  public void setCurrentTerm(int currentTerm) {
+    this.currentTerm = currentTerm;
+  }
+
+  public void setLastLogIndex(int lastLogIndex) {
+    this.lastLogIndex = lastLogIndex;
+  }
 }

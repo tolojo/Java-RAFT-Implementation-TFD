@@ -24,7 +24,7 @@ public void run(){
        ElectionThread election = new ElectionThread(server);
     
         election.start();
-        server.election.goOn();
+        //server.election.goOn();
         
       
 
