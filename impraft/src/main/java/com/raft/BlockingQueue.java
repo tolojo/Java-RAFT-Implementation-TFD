@@ -39,4 +39,8 @@ public synchronized E dequeue() throws InterruptedException{
         return t;
 }
 
+public int getSize() {
+    return this.queue.size();
+}
+
 }

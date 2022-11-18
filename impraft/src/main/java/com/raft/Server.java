@@ -338,6 +338,10 @@ public class Server
     return serverId;
   }
 
+  public serverAddress getId(){
+    return id;
+  }
+
   public void setCurrentTerm(int currentTerm) {
     this.currentTerm = currentTerm;
   }

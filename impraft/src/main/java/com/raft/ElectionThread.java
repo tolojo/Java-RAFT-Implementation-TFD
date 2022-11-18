@@ -22,7 +22,7 @@ public class ElectionThread extends Thread {
 
   public ElectionThread(Server server) {
     this.server = server;
-    candidateId = server.getLeaderId();
+    candidateId = server.getId();
     clastLogIndex = server.getLastLogIndex();
     lastTermIndex = server.getCurrentTerm();
   }
