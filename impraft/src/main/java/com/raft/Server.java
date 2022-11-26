@@ -203,10 +203,13 @@ public class Server
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
     try {
       
+      System.out.println(data);
       if (id != this.leaderId){
         ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + leaderId.getIpAddress() + ":" + leaderId.getPort() + "/server");
+        request.quorumInvokeRPC(label, data);
+        return "O pedido do cliente foi redirecionado para o líder";
       }
-      //System.out.println(data);
+      
       else{
       if (!data.equals("")) {
         for (int j = 0; j < wholeMessage.size(); j++) {

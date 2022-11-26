@@ -12,6 +12,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Random;
 
 import com.raft.resources.serverAddress;
 
@@ -24,7 +25,9 @@ public class Client {
 	private ArrayList<String> wholeMessage = new ArrayList<String>();
 
 
-    public Client(){
+
+
+	public Client(){
 
 		clientid = serverAddress.getLocalIp();
         init();
@@ -91,8 +94,14 @@ public class Client {
 			e.printStackTrace();
 			
 	}
-	
 
 }
 
+	/*public void InvokeCounterService(){
+		CounterService counterService = new CounterService();
+		timeout = randomGen.nextInt(5);
+		
+
+}*/
+	
 }
