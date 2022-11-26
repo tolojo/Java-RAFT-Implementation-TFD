@@ -25,9 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class Server
-  extends Leader
-  implements ServerInterface, Remote, Serializable {
+public class Server extends Leader implements ServerInterface, Remote, Serializable {
 
   public static final String CONFIG_INI = "config.ini";
   private String port, clusterString, clusterAux;
@@ -303,7 +301,11 @@ public class Server
     }
     return responseF;
   }
-
+  public int increaseBy(int x){
+		int counter = 0;
+		counter = counter + x;
+		return counter;
+}
   private void resetTimer() {
     timeout = randomGen.nextInt(20);
     while (timeout < 10) {
