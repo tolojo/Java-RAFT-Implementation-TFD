@@ -202,8 +202,12 @@ public class Server
     throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
     try {
-      System.out.println(data);
-
+      
+      if (id != this.leaderId){
+        ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + leaderId.getIpAddress() + ":" + leaderId.getPort() + "/server");
+      }
+      //System.out.println(data);
+      else{
       if (!data.equals("")) {
         for (int j = 0; j < wholeMessage.size(); j++) {
           if (data.equals(wholeMessage.get(j))) {}
@@ -264,10 +268,12 @@ public class Server
         .start();
 
       return "";
+    }
     } catch (Exception e) {
       e.printStackTrace();
     }
     return "";
+  
   }
 
   private serverAddress votedFor = new serverAddress();
