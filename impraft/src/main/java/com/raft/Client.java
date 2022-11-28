@@ -1,5 +1,6 @@
 package com.raft;
 
+import com.raft.resources.serverAddress;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -14,62 +15,64 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
-import com.raft.resources.serverAddress;
-
 public class Client {
-  
-    private String path;
-    private String port,clusterString;
-    private serverAddress[] clusterArray;
-	private String clientid;
-	private ArrayList<String> wholeMessage = new ArrayList<String>();
 
+  private String path;
+  private String port, clusterString;
+  private serverAddress[] clusterArray;
+  private String clientid;
+  private ArrayList<String> wholeMessage = new ArrayList<String>();
 
+  public Client() {
+    clientid = serverAddress.getLocalIp();
+    init();
+    connectToServer();
+  }
 
+  public void init() {
+    port = "";
+    clusterString = "";
+    try {
+      Properties p = new Properties();
+      p.load(new FileInputStream("src/main/java/com/raft/client/config.ini"));
 
-	public Client(){
+      String[] clusterString = p.getProperty("cluster").split(";");
+      clusterArray = new serverAddress[clusterString.length];
+      for (int i = 0; i < clusterString.length; i++) {
+        String[] splited = clusterString[i].split(":");
+        clusterArray[i] =
+          new serverAddress(splited[0], Integer.parseInt(splited[1]));
+      }
+    } catch (IOException e) {
+      //System.err.println("Config file not found")
 
-		clientid = serverAddress.getLocalIp();
-        init();
-        connectToServer();
+      e.printStackTrace();
     }
+  }
 
-    public void init(){
-        port="";clusterString="";
-		try {
-			Properties p = new Properties();
-			p.load(new FileInputStream("src/main/java/com/raft/client/config.ini"));
+  public serverAddress[] getClusterArray() {
+    return clusterArray;
+  }
 
-            String[] clusterString = p.getProperty("cluster").split(";");
-			clusterArray = new serverAddress[clusterString.length];
-			for (int i = 0; i < clusterString.length; i++) {
-				String[] splited = clusterString[i].split(":");
-				clusterArray[i] = new serverAddress(splited[0], Integer.parseInt(splited[1]));
-			}
-   
-		} catch (IOException e) {
-			//System.err.println("Config file not found")
-			
-			e.printStackTrace();
-		} 
+  public void connectToServer() {
+    for (int i = 0; i < clusterArray.length; i++) {
+      serverAddress address = clusterArray[i];
+      try {
+        Remote server = (Remote) Naming.lookup(
+          "rmi://" +
+          address.getIpAddress() +
+          ":" +
+          address.getPort() +
+          "/server"
+        );
+      } catch (Exception e) {
+        e.printStackTrace();
+        continue;
+      }
     }
-	public serverAddress[] getClusterArray(){
-		return clusterArray;
-	}
+  }
 
-    public void connectToServer() {
-		for (int i = 0; i < clusterArray.length; i++) {
-			serverAddress address = clusterArray[i];
-			try { 	
-				Remote server = (Remote) Naming.lookup("rmi://" + address.getIpAddress() + ":" + address.getPort() + "/server");
-			} catch (Exception e) {
-				e.printStackTrace();
-				continue;
-			}
-		}
-	}
-
-	/*public void request(serverAddress serverId,String label, String msg){
+  /*public void request(serverAddress serverId,String label, String msg){
 			try { 
 				
 				ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + serverId.getIpAddress() + ":" + serverId.getPort() + "/server");
@@ -84,28 +87,25 @@ public class Client {
 				
 			}
 	}*/
-	public void requestQuorum(serverAddress server,String label, String msg){
-		try { 
+  public void requestQuorum(serverAddress server, String label, String msg) {
+    try {
+      ServerInterface request = (ServerInterface) Naming.lookup(
+        "rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server"
+      );
+      request.quorumInvokeRPC(label, msg);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 
-			ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server");
-			request.quorumInvokeRPC(label, msg);
-		
-		} catch (Exception e) {
-			e.printStackTrace();
-			
-	}
-
-}
-
-	public void requestCounterService(serverAddress server, int x){
-		try {
-		ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server");
-		request.increaseBy(x);
-		} catch (Exception e) {
-			e.printStackTrace();
-			
-	}
-
-}
-	
+  public void requestCounterService(serverAddress server, int x) {
+    try {
+      ServerInterface request = (ServerInterface) Naming.lookup(
+        "rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server"
+      );
+      request.increaseBy(x);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 }

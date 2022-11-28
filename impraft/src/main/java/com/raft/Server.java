@@ -42,6 +42,8 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
   private Random randomGen = new Random();
   private int heartBeatTimer = 3;
 
+  private int counter = 0;
+
   private ArrayList<String> wholeMessage = new ArrayList<String>();
 
   private long serverId;
@@ -155,6 +157,7 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
   ) {
     try {
       if (term >= currentTerm) {
+        //deve retornar o seu id(IP:PORT) juntamente com a resposta (wholeMessage)
         this.currentTerm = term;
         this.leaderId = leaderId;
         this.lastLogIndex = lastLogIndex;
@@ -260,6 +263,7 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
               Thread.interrupted();
             }
             entry = responsesQueue.dequeue();
+            //nesta posição verificar se o log retornado pelo follower é igual ao log do leader, se nao for inicar uma thread para incrementar as logs em falta
             responsesCount++;
           }
         } catch (Exception e) {
@@ -302,7 +306,6 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
     return responseF;
   }
   public int increaseBy(int x){
-		int counter = 0;
 		counter = counter + x;
 		return counter;
 }
