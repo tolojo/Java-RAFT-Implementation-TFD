@@ -27,6 +27,7 @@ public class HeartBeatThread extends Thread {
                 } catch (RemoteException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
+					continue;
                 }
 				sleep(server.getHeartBeatTimer()*1000);
 				

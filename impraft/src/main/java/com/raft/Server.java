@@ -2,6 +2,7 @@ package com.raft;
 
 import com.raft.resources.serverAddress;
 import java.io.*;
+import java.lang.Thread.State;
 import java.net.MalformedURLException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
@@ -25,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class Server extends Leader implements ServerInterface, Remote, Serializable {
+public class Server implements ServerInterface, Remote, Serializable {
 
   public static final String CONFIG_INI = "config.ini";
   private String port, clusterString, clusterAux;
@@ -43,6 +44,8 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
   private int heartBeatTimer = 3;
 
   private int counter = 0;
+  private int newRequestValue = 0;
+  private int requestQuorumId = 0;
 
   private ArrayList<String> wholeMessage = new ArrayList<String>();
 
@@ -54,6 +57,7 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
 
   private int currentTerm;
   private int lastLogIndex;
+  private boolean commit = false;
 
   enum serverState {
     FOLLOWER,
@@ -119,6 +123,7 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
         clusterArray[i] =
           new serverAddress(splited[0], Integer.parseInt(splited[1]));
       }
+      
 
       // Regist this server
       registServer();
@@ -148,12 +153,14 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
   }
 
   public ArrayList<String> invokeRPC(
+    int id,
     ArrayList<String> message,
     String newMsg,
     String label,
     int term,
     serverAddress leaderId,
-    int lastLogIndex
+    int lastLogIndex,
+    boolean commit
   ) {
     try {
       if (term >= currentTerm) {
@@ -161,10 +168,12 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
         this.currentTerm = term;
         this.leaderId = leaderId;
         this.lastLogIndex = lastLogIndex;
+
         votedFor = new serverAddress();
         System.out.println("term: " + term);
         System.out.println("lasIndex: " + lastLogIndex);
-        System.out.println(newMsg);
+        System.out.println("state machine state: " + counter);
+        System.out.println("message: " + newMsg);
         resetTimer();
         timeoutThread.stop();
         timeoutThread = new TimoutThread(this);
@@ -175,6 +184,23 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
           return wholeMessage;
         }
         if (label.equals("ADD")) {
+          if (commit){
+            System.out.println(wholeMessage.size());
+            System.out.println(message.size());
+            if (wholeMessage.get(lastLogIndex-1).equals(message.get(lastLogIndex-1))){
+              counter = counter + newRequestValue;
+              this.commit = false;
+              newRequestValue = 0;
+              System.out.println("commited");
+              System.out.println("state machine state: " + counter);
+              return message;
+            } else{
+              newRequestValue = Integer.parseInt(newMsg);
+              wholeMessage.remove(lastLogIndex-1);
+              wholeMessage.add(message.get(lastLogIndex-1));
+              System.out.println("Last log term altered");
+            }
+          }
           if (newMsg.equals("")) {
             return message;
           }
@@ -185,11 +211,12 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
           }
           if (flag) {
             return wholeMessage;
-          } else if (flag == false) {
-            wholeMessage.add(newMsg);
+          } else {
+            commit = true;
+            newRequestValue = Integer.parseInt(newMsg);
+            wholeMessage.add(id+":"+newMsg);
             return wholeMessage;
           }
-          return wholeMessage;
         }
       }
       return wholeMessage;
@@ -202,16 +229,11 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
   public String quorumInvokeRPC(String label, String data)
     throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
+    requestQuorumId += 1;
     try {
       
       System.out.println(data);
-      if (id != this.leaderId){
-        ServerInterface request = (ServerInterface) Naming.lookup("rmi://" + leaderId.getIpAddress() + ":" + leaderId.getPort() + "/server");
-        request.quorumInvokeRPC(label, data);
-        return "O pedido do cliente foi redirecionado para o líder";
-      }
-      
-      else{
+
       if (!data.equals("")) {
         for (int j = 0; j < wholeMessage.size(); j++) {
           if (data.equals(wholeMessage.get(j))) {}
@@ -233,16 +255,18 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
             );
             responseAux =
               server.invokeRPC(
+                requestQuorumId,
                 wholeMessage,
                 data,
                 label,
                 currentTerm,
                 leaderId,
-                lastLogIndex
+                lastLogIndex,
+                commit
               );
             responsesQueue.enqueue(responseAux);
           } catch (RemoteException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
           } catch (MalformedURLException e) {
             e.printStackTrace();
           } catch (NotBoundException e) {
@@ -260,7 +284,12 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
           while (true) {
             if (responsesCount > (clusterArray.length / 2)) {
               System.out.println("Respostas recolhidas");
+              if(!data.equals("")){
+                commit = true;
+              }
+              
               Thread.interrupted();
+
             }
             entry = responsesQueue.dequeue();
             //nesta posição verificar se o log retornado pelo follower é igual ao log do leader, se nao for inicar uma thread para incrementar as logs em falta
@@ -273,7 +302,7 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
         .start();
 
       return "";
-    }
+    
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -305,10 +334,7 @@ public class Server extends Leader implements ServerInterface, Remote, Serializa
     }
     return responseF;
   }
-  public int increaseBy(int x){
-		counter = counter + x;
-		return counter;
-}
+
   private void resetTimer() {
     timeout = randomGen.nextInt(20);
     while (timeout < 10) {

@@ -33,7 +33,7 @@ public class ResponsesThread extends Thread {
     public void run(){
         try {
             ServerInterface serverResponse = (ServerInterface) Naming.lookup("rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server");
-            response = serverResponse.invokeRPC(wholeMessage, data, label,currentTerm,leaderId, lastLogIndex);
+            response = serverResponse.invokeRPC(0,wholeMessage, data, label,currentTerm,leaderId, lastLogIndex);
             responses.put(response);
 
 
