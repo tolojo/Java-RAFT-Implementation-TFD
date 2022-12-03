@@ -336,9 +336,9 @@ public class Server implements ServerInterface, Remote, Serializable {
   }
 
   private void resetTimer() {
-    timeout = randomGen.nextInt(20);
-    while (timeout < 10) {
-      timeout = randomGen.nextInt(20);
+    timeout = randomGen.nextInt(25);
+    while (timeout < 25) {
+      timeout = randomGen.nextInt(25);
     }
   }
 
