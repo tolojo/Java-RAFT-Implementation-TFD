@@ -197,7 +197,7 @@ public class Server implements ServerInterface, Remote, Serializable {
             } else{
               newRequestValue = Integer.parseInt(newMsg);
               wholeMessage.remove(lastLogIndex-1);
-              wholeMessage.add(message.get(lastLogIndex-1));
+              wholeMessage.add(id+":"+message.get(lastLogIndex-1));
               System.out.println("Last log term altered");
             }
           }
