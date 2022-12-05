@@ -4,4 +4,4 @@ To launch the project just run the following command in the impraft folder:
 ```
 /path/to/project -path src/main/java/com/raft/server{NUMBER}
 ```
-NUMBER can be {0,1,2,3,4} depending on the replica
+NUMBER can be from {}
