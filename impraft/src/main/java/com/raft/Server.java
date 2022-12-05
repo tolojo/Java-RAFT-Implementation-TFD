@@ -264,6 +264,8 @@ public class Server implements ServerInterface, Remote, Serializable {
                 lastLogIndex,
                 commit
               );
+            //nesta posição verificar se o log retornado pelo follower é igual ao log do leader, se nao for inicar uma thread para incrementar as logs em falta
+
             responsesQueue.enqueue(responseAux);
           } catch (RemoteException e) {
             //e.printStackTrace();
@@ -292,7 +294,6 @@ public class Server implements ServerInterface, Remote, Serializable {
 
             }
             entry = responsesQueue.dequeue();
-            //nesta posição verificar se o log retornado pelo follower é igual ao log do leader, se nao for inicar uma thread para incrementar as logs em falta
             responsesCount++;
           }
         } catch (Exception e) {
