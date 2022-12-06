@@ -173,7 +173,7 @@ public class Server implements ServerInterface, Remote, Serializable {
         //deve retornar o seu id(IP:PORT) juntamente com a resposta (wholeMessage)
         this.currentTerm = term;
         this.leaderId = leaderId;
-        this.lastLogIndex = lastLogIndex;
+
 
         votedFor = new serverAddress();
         System.out.println("term: " + term);
