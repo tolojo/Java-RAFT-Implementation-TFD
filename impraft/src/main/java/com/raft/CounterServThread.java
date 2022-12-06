@@ -5,7 +5,6 @@ import java.util.Random;
 public class CounterServThread extends Thread{
   private boolean isRunning;
   private int  timeout = 5 ;
-  private Client client;
   private Random randomGen = new Random();
   private int increment = 0;
 

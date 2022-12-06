@@ -161,6 +161,7 @@ public class Server implements ServerInterface, Remote, Serializable {
     serverAddress leaderId,
     int lastLogIndex,
     boolean commit
+    //flag
   ) {
     try {
       if (term >= currentTerm) {
@@ -264,8 +265,8 @@ public class Server implements ServerInterface, Remote, Serializable {
                 lastLogIndex,
                 commit
               );
-            //nesta posição verificar se o log retornado pelo follower é igual ao log do leader, se nao for inicar uma thread para incrementar as logs em falta
-
+            
+              
             responsesQueue.enqueue(responseAux);
           } catch (RemoteException e) {
             //e.printStackTrace();
@@ -342,9 +343,13 @@ public class Server implements ServerInterface, Remote, Serializable {
       timeout = randomGen.nextInt(25);
     }
   }
-
+  
   public serverState getState() {
     return currentState;
+  }
+
+  public ArrayList<String> getWholeMessage() {
+    return wholeMessage;
   }
 
   public void setCurrentState(serverState currentState) {
