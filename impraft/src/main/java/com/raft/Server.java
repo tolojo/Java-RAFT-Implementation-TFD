@@ -241,13 +241,6 @@ public class Server implements ServerInterface, Remote, Serializable {
       
       System.out.println(data);
 
-      if (!data.equals("")) {
-        for (int j = 0; j < wholeMessage.size(); j++) {
-          if (data.equals(wholeMessage.get(j))) {}
-        }
-        
-      }
-
       for (int i = 0; i < clusterArray.length; i++) {
         serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
