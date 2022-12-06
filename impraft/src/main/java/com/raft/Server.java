@@ -164,6 +164,12 @@ public class Server implements ServerInterface, Remote, Serializable {
   ) {
     try {
       if (term >= currentTerm) {
+        if(currentState == serverState.LEADER){
+          if (leaderId != this.leaderId){
+            currentState = serverState.FOLLOWER;
+            this.leaderId = leaderId;
+          }
+        }
         //deve retornar o seu id(IP:PORT) juntamente com a resposta (wholeMessage)
         this.currentTerm = term;
         this.leaderId = leaderId;
@@ -187,12 +193,13 @@ public class Server implements ServerInterface, Remote, Serializable {
           if (commit){
             System.out.println(wholeMessage.size());
             System.out.println(message.size());
-            if (wholeMessage.get(lastLogIndex-1).equals(message.get(lastLogIndex-1))){
+            if (wholeMessage.get(lastLogIndex).equals(message.get(lastLogIndex))){
               counter = counter + newRequestValue;
               this.commit = false;
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
+              setLastLogIndex(lastLogIndex + 1);
               return message;
             } else{
               newRequestValue = Integer.parseInt(newMsg);
@@ -238,7 +245,7 @@ public class Server implements ServerInterface, Remote, Serializable {
         for (int j = 0; j < wholeMessage.size(); j++) {
           if (data.equals(wholeMessage.get(j))) {}
         }
-        setLastLogIndex(lastLogIndex + 1);
+        
       }
 
       for (int i = 0; i < clusterArray.length; i++) {

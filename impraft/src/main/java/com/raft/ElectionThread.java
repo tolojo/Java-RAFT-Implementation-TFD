@@ -20,11 +20,14 @@ public class ElectionThread extends Thread {
   private int clastLogIndex;
   private int lastTermIndex;
 
+  private int falhas =0;
+
   public ElectionThread(Server server) {
     this.server = server;
     candidateId = server.getId();
     clastLogIndex = server.getLastLogIndex();
     lastTermIndex = server.getCurrentTerm();
+    
   }
 
   public void run() {
@@ -52,12 +55,19 @@ public class ElectionThread extends Thread {
             responsesQueue.enqueue(responseAux);
           } 
             catch (RemoteException e) {
+              falhas++;
               e.printStackTrace();
               continue;
             }
           }
           new Thread(() -> {
             try {
+              if(falhas>=3){
+                System.out.println("Não existe a maioria");
+                isRunning = false;
+                wait();
+              }
+
               int responsesCount = 0;
               boolean entry;
               boolean oneTimeRun = true;
@@ -79,7 +89,8 @@ public class ElectionThread extends Thread {
                 entry = responsesQueue.dequeue();
                 if(entry == true){
                 responsesCount++;
-            }
+              }
+
               }
             } catch (Exception e) {
               e.printStackTrace();
