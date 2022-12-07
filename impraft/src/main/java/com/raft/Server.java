@@ -51,6 +51,7 @@ public class Server implements ServerInterface, Remote, Serializable {
 
   private long serverId;
   TimoutThread timeoutThread;
+  logThread logThread;
   ElectionThread election;
   HeartBeatThread heartbeat;
   private serverAddress leaderId;
@@ -161,7 +162,7 @@ public class Server implements ServerInterface, Remote, Serializable {
     serverAddress leaderId,
     int lastLogIndex,
     boolean commit
-    //flag
+   
   ) {
     try {
       if (term >= currentTerm) {
@@ -265,7 +266,10 @@ public class Server implements ServerInterface, Remote, Serializable {
                 lastLogIndex,
                 commit
               );
-            
+            while(wholeMessage.size() != responseAux.size()){
+              //logThread = new LogThread();
+              logThread.start();
+            }
               
             responsesQueue.enqueue(responseAux);
           } catch (RemoteException e) {
