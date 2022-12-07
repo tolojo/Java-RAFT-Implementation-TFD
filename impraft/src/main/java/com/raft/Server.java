@@ -25,6 +25,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class Server implements ServerInterface, Remote, Serializable {
 
@@ -196,7 +197,6 @@ public class Server implements ServerInterface, Remote, Serializable {
             System.out.println(message.size());
             if (wholeMessage.get(lastLogIndex-1).equals(message.get(lastLogIndex-1))){
               counter = counter + newRequestValue;
-              this.commit = false;
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
@@ -270,6 +270,7 @@ public class Server implements ServerInterface, Remote, Serializable {
                 lastLogIndex,
                 commit
               );
+              if (commit) commit = false;
               System.out.println("size: "+responseAux.size());
             if(responseAux.size() < lastLogIndex){
               int fLastIndex = responseAux.size();
@@ -412,7 +413,7 @@ public class Server implements ServerInterface, Remote, Serializable {
     this.lastLogIndex = lastLogIndex;
   }
 
-  public void sendEntry(int id, String msg, serverAddress followerId, Server server, int lastLogIndex, ArrayList<String> leaderLog){
+  public void sendEntry(int id, String msg, serverAddress followerId, Server server, int lastLogIndex, ArrayList<String> leaderLog) throws InterruptedException{
 		try {
 			ArrayList<String> aux;
 			ServerInterface serverI = (ServerInterface) Naming.lookup(
@@ -425,6 +426,7 @@ public class Server implements ServerInterface, Remote, Serializable {
 				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, false);
 				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, true);
         System.out.println("sending log: " + id+ " with mesage: "+msg);
+        TimeUnit.SECONDS.sleep(2);
 				if(lastLogIndex!= aux.size()){
           sendEntry(id, msg, followerId, server, lastLogIndex, leaderLog);
 				}
