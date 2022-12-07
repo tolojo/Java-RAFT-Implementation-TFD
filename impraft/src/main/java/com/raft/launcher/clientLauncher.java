@@ -11,7 +11,7 @@ public class clientLauncher {
 	public static void main(String[] args) {
 		Client c = new Client();
 		increaseBy increase = new increaseBy();
-		serverAddress s = new serverAddress("127.0.0.1", 8001);
+		serverAddress s = new serverAddress("127.0.0.1", 8000);
 		//c.request(s, "GET", "a3c1231");
 		new Thread(()->{
 			while (true){

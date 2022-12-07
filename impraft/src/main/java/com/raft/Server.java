@@ -179,7 +179,8 @@ public class Server implements ServerInterface, Remote, Serializable {
 
         votedFor = new serverAddress();
         System.out.println("term: " + term);
-        System.out.println("lasIndex: " + lastLogIndex);
+        System.out.println("LeaderlastIndex: " + lastLogIndex);
+        System.out.println("MyLastLogIndex: " + this.lastLogIndex);
         System.out.println("state machine state: " + counter);
         System.out.println("message: " + newMsg);
         resetTimer();
@@ -271,7 +272,7 @@ public class Server implements ServerInterface, Remote, Serializable {
                 commit
               );
               if (commit) commit = false;
-              System.out.println("size: "+responseAux.size());
+              
             if(responseAux.size() < lastLogIndex){
               int fLastIndex = responseAux.size();
               char[] mAux = wholeMessage.get(fLastIndex).toCharArray();
@@ -424,6 +425,7 @@ public class Server implements ServerInterface, Remote, Serializable {
 			      "/server"
 			    );
 				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, false);
+        TimeUnit.SECONDS.sleep(2);
 				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, true);
         System.out.println("sending log: " + id+ " with mesage: "+msg);
         TimeUnit.SECONDS.sleep(2);
