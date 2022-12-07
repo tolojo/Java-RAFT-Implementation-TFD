@@ -51,7 +51,6 @@ public class Server implements ServerInterface, Remote, Serializable {
 
   private long serverId;
   TimoutThread timeoutThread;
-  logThread logThread;
   ElectionThread election;
   HeartBeatThread heartbeat;
   private serverAddress leaderId;
@@ -195,13 +194,13 @@ public class Server implements ServerInterface, Remote, Serializable {
           if (commit){
             System.out.println(wholeMessage.size());
             System.out.println(message.size());
-            if (wholeMessage.get(lastLogIndex).equals(message.get(lastLogIndex))){
+            if (wholeMessage.get(lastLogIndex-1).equals(message.get(lastLogIndex-1))){
               counter = counter + newRequestValue;
               this.commit = false;
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
-              setLastLogIndex(lastLogIndex + 1);
+              
               return message;
             } else{
               newRequestValue = Integer.parseInt(newMsg);
@@ -211,7 +210,7 @@ public class Server implements ServerInterface, Remote, Serializable {
             }
           }
           if (newMsg.equals("")) {
-            return message;
+            return wholeMessage;
           }
           for (int i = 0; i < wholeMessage.size(); i++) {
             if (wholeMessage.get(i).equals(newMsg)) {
@@ -224,6 +223,7 @@ public class Server implements ServerInterface, Remote, Serializable {
             commit = true;
             newRequestValue = Integer.parseInt(newMsg);
             wholeMessage.add(id+":"+newMsg);
+            setLastLogIndex(lastLogIndex + 1);
             return wholeMessage;
           }
         }
@@ -238,7 +238,11 @@ public class Server implements ServerInterface, Remote, Serializable {
   public String quorumInvokeRPC(String label, String data)
     throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
-    requestQuorumId += 1;
+    
+    if (!data.equals("")) {
+     requestQuorumId += 1;
+    }
+    
     try {
       
       System.out.println(data);
@@ -266,9 +270,16 @@ public class Server implements ServerInterface, Remote, Serializable {
                 lastLogIndex,
                 commit
               );
-            while(wholeMessage.size() != responseAux.size()){
-              //logThread = new LogThread();
-              logThread.start();
+              System.out.println("size: "+responseAux.size());
+            if(responseAux.size() < lastLogIndex){
+              int fLastIndex = responseAux.size();
+              char[] mAux = wholeMessage.get(fLastIndex).toCharArray();
+              System.out.println(mAux);
+              String aux = "" + mAux[0];
+              String messageAux = "" +wholeMessage.get(fLastIndex).charAt(wholeMessage.get(fLastIndex).length()-1);
+              int idAux =  Integer.parseInt(aux);
+
+              sendEntry(idAux, messageAux, serverAux, this, lastLogIndex, wholeMessage);
             }
               
             responsesQueue.enqueue(responseAux);
@@ -329,7 +340,8 @@ public class Server implements ServerInterface, Remote, Serializable {
     boolean responseV = true;
     if (term < currentTerm) {
       return responseF;
-    } else if (votedFor.getPort() == 0 || votedFor == candidateId) {
+    }
+    if (votedFor.getPort() == 0 || votedFor == candidateId) {
       if (clastLogIndex == lastLogIndex) {
         votedFor = candidateId;
         termAux = term;
@@ -399,4 +411,27 @@ public class Server implements ServerInterface, Remote, Serializable {
   public void setLastLogIndex(int lastLogIndex) {
     this.lastLogIndex = lastLogIndex;
   }
+
+  public void sendEntry(int id, String msg, serverAddress followerId, Server server, int lastLogIndex, ArrayList<String> leaderLog){
+		try {
+			ArrayList<String> aux;
+			ServerInterface serverI = (ServerInterface) Naming.lookup(
+			      "rmi://" +
+			      followerId.getIpAddress() +
+			      ":" +
+			      followerId.getPort() +
+			      "/server"
+			    );
+				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, false);
+				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, true);
+        System.out.println("sending log: " + id+ " with mesage: "+msg);
+				if(lastLogIndex!= aux.size()){
+          sendEntry(id, msg, followerId, server, lastLogIndex, leaderLog);
+				}
+
+		} catch (MalformedURLException | RemoteException | NotBoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

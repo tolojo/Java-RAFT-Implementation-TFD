@@ -33,24 +33,26 @@ public class logThread extends Thread {
 
 	@Override
 	public void run() {
-		if(server.getLastLogIndex()!= lastLogIndexFollower){
-			
-		}
-		else{
-			stop();
-		}
+
+
 		
 	}
-	public void sendEntry(int id, String msg, serverAddress followerId ){
+	public void sendEntry(int id, String msg, serverAddress followerId, Server server, int lastLogIndex){
 		try {
-			ServerInterface server = (ServerInterface) Naming.lookup(
+			ArrayList<String> aux;
+			ServerInterface serverI = (ServerInterface) Naming.lookup(
 			      "rmi://" +
 			      followerId.getIpAddress() +
 			      ":" +
 			      followerId.getPort() +
 			      "/server"
 			    );
-				server.invokeRPC();
+				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, false);
+				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, true);
+				if(lastLogIndex!= aux.size()-1){
+					
+				};
+
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
