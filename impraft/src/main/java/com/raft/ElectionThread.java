@@ -62,7 +62,7 @@ public class ElectionThread extends Thread {
           }
           new Thread(() -> {
             try {
-              if(falhas>=3){
+              if(falhas>=(server.getClusterArray().length/2)+1){
                 System.out.println("Não existe a maioria");
                 isRunning = false;
                 wait();

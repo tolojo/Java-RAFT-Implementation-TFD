@@ -175,12 +175,12 @@ public class Server implements ServerInterface, Remote, Serializable {
         //deve retornar o seu id(IP:PORT) juntamente com a resposta (wholeMessage)
         this.currentTerm = term;
         this.leaderId = leaderId;
-
-
+        int lastentry = this.lastLogIndex;
+        
         votedFor = new serverAddress();
+        System.out.println(wholeMessage);
         System.out.println("term: " + term);
         System.out.println("LeaderlastIndex: " + lastLogIndex);
-        System.out.println("MyLastLogIndex: " + this.lastLogIndex);
         System.out.println("state machine state: " + counter);
         System.out.println("message: " + newMsg);
         resetTimer();
@@ -188,21 +188,17 @@ public class Server implements ServerInterface, Remote, Serializable {
         timeoutThread = new TimoutThread(this);
         timeoutThread.start();
         boolean flag = false;
-        System.out.println(label);
         if (label.equals("GET")) {
           return wholeMessage;
         }
         if (label.equals("ADD")) {
           if (commit){
-            System.out.println(wholeMessage.size());
-            System.out.println(message.size());
-            if (wholeMessage.get(lastLogIndex-1).equals(message.get(lastLogIndex-1))){
+            if (wholeMessage.get(lastentry-1).equals(message.get(lastentry-1))){
               counter = counter + newRequestValue;
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
-              
-              return message;
+              return wholeMessage;
             } else{
               newRequestValue = Integer.parseInt(newMsg);
               wholeMessage.remove(lastLogIndex-1);
@@ -224,7 +220,7 @@ public class Server implements ServerInterface, Remote, Serializable {
             commit = true;
             newRequestValue = Integer.parseInt(newMsg);
             wholeMessage.add(id+":"+newMsg);
-            setLastLogIndex(lastLogIndex + 1);
+            setLastLogIndex(this.lastLogIndex + 1);
             return wholeMessage;
           }
         }
@@ -425,13 +421,11 @@ public class Server implements ServerInterface, Remote, Serializable {
 			      "/server"
 			    );
 				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, false);
-        TimeUnit.SECONDS.sleep(2);
+        TimeUnit.SECONDS.sleep(1);
 				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, true);
         System.out.println("sending log: " + id+ " with mesage: "+msg);
-        TimeUnit.SECONDS.sleep(2);
-				if(lastLogIndex!= aux.size()){
-          sendEntry(id, msg, followerId, server, lastLogIndex, leaderLog);
-				}
+        
+				
 
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
 			// TODO Auto-generated catch block
