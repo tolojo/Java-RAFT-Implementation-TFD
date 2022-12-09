@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +32,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.json.*;
 
 public class Server implements ServerInterface, Remote, Serializable {
 
@@ -113,6 +117,7 @@ public class Server implements ServerInterface, Remote, Serializable {
   }
 
   private void init() {
+    initFromSnapshot();
     port = "";
     clusterString = "";
     try {
@@ -448,41 +453,63 @@ public class Server implements ServerInterface, Remote, Serializable {
   public void snapshot(String lastIncludedTerm){
     commitCounter = 0;
     requestQuorumId = 0;
-    lastLogIndex = 1;
-
-    
+    lastLogIndex = 1;    
     wholeMessage = new ArrayList<>();
     wholeMessage.add(lastIncludedTerm);
-    
-
     JSONObject checkpoint = new JSONObject();
-
-    checkpoint.put("Last_Included_Log_Value:", lastIncludedTerm);
-    checkpoint.put("State_Machine_State:", counter);
-
+    checkpoint.put("Last_Included_Log_Value", lastIncludedTerm);
+    checkpoint.put("State_Machine_State", ""+counter);
     System.out.println("Snapshot criado");
-
     try {
       FileWriter file = new FileWriter(path + File.separator + Snap_FileTemp);
       file.write(checkpoint.toJSONString());
       file.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    try {
-      File fileE = new File(path + File.separator + Snap_FileTemp);
       Path oldFile = Paths.get(path + File.separator + Snap_FileTemp);
-
-      FileInputStream fis = new FileInputStream(fileE);
-      Files.move(oldFile, oldFile.resolveSibling("snapshot.json"));
-
-    } catch (FileNotFoundException e) {
+      Files.move(oldFile, oldFile.resolveSibling("snapshot"));
+    } 
+    catch (FileNotFoundException e) {
       System.err.println("Snapshot file not found");
       e.printStackTrace();
-    } catch (IOException e) {
+    } 
+    catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public void initFromSnapshot(){
+    JSONParser parser = new JSONParser();
+    File f = new File(path + File.separator + "snapshot");
+    String data = "";
+    if (f.exists()){
+      try (Scanner myReader = new Scanner(f)) {
+        while (myReader.hasNextLine()) {
+           data = myReader.nextLine();
+        }
+        
+        Object obj =  parser.parse(data);
+        JSONObject jsonObject = (JSONObject)obj;
+        
+        String Last_Included_Log_Value = (String)jsonObject.get("Last_Included_Log_Value");
+        String State_Machine_State = (String)jsonObject.get("State_Machine_State");
+        System.out.println("Snapshotlog: "+Last_Included_Log_Value);
+        System.out.println("State: "+ State_Machine_State);
+        wholeMessage.remove(0);
+        wholeMessage.add(Last_Included_Log_Value);
+        counter = Integer.parseInt(State_Machine_State);
+      } catch (FileNotFoundException e) { 
+        e.printStackTrace();
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
+    }else{
+      System.out.println("No snapshot file found");
+    }
+
+
+
 
   }
+
+
+
 }
