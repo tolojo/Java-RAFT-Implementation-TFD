@@ -4,6 +4,9 @@ import com.raft.resources.serverAddress;
 import java.io.*;
 import java.lang.Thread.State;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
@@ -27,6 +30,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.json.simple.JSONObject;
+
 public class Server implements ServerInterface, Remote, Serializable {
 
   public static final String CONFIG_INI = "config.ini";
@@ -44,7 +49,10 @@ public class Server implements ServerInterface, Remote, Serializable {
   private Random randomGen = new Random();
   private int heartBeatTimer = 3;
 
+  private static final String Snap_FileTemp = "snapshot.tmp";
+
   private int counter = 0;
+  private int commitCounter = 0;
   private int newRequestValue = 0;
   private int requestQuorumId = 0;
 
@@ -198,6 +206,12 @@ public class Server implements ServerInterface, Remote, Serializable {
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
+              commitCounter++;
+              if(commitCounter == 10){
+                char lastlog = wholeMessage.get(lastLogIndex-1).charAt(wholeMessage.get(lastLogIndex-1).length()-1);
+                int logvalue = Integer.parseInt(""+lastlog);
+                snapshot("0:"+logvalue);
+              }
               return wholeMessage;
             } else{
               newRequestValue = Integer.parseInt(newMsg);
@@ -268,8 +282,7 @@ public class Server implements ServerInterface, Remote, Serializable {
                 commit
               );
               if (commit) commit = false;
-              
-            if(responseAux.size() < lastLogIndex){
+              if(responseAux.size() < lastLogIndex){
               int fLastIndex = responseAux.size();
               char[] mAux = wholeMessage.get(fLastIndex).toCharArray();
               System.out.println(mAux);
@@ -315,7 +328,6 @@ public class Server implements ServerInterface, Remote, Serializable {
         }
       })
         .start();
-
       return "";
     
     } catch (Exception e) {
@@ -432,4 +444,45 @@ public class Server implements ServerInterface, Remote, Serializable {
 			e.printStackTrace();
 		}
 	}
+
+  public void snapshot(String lastIncludedTerm){
+    commitCounter = 0;
+    requestQuorumId = 0;
+    lastLogIndex = 1;
+
+    
+    wholeMessage = new ArrayList<>();
+    wholeMessage.add(lastIncludedTerm);
+    
+
+    JSONObject checkpoint = new JSONObject();
+
+    checkpoint.put("Last_Included_Log_Value:", lastIncludedTerm);
+    checkpoint.put("State_Machine_State:", counter);
+
+    System.out.println("Snapshot criado");
+
+    try {
+      FileWriter file = new FileWriter(path + File.separator + Snap_FileTemp);
+      file.write(checkpoint.toJSONString());
+      file.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    try {
+      File fileE = new File(path + File.separator + Snap_FileTemp);
+      Path oldFile = Paths.get(path + File.separator + Snap_FileTemp);
+
+      FileInputStream fis = new FileInputStream(fileE);
+      Files.move(oldFile, oldFile.resolveSibling("snapshot.json"));
+
+    } catch (FileNotFoundException e) {
+      System.err.println("Snapshot file not found");
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+  }
 }
