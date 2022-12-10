@@ -79,11 +79,8 @@ public class ElectionThread extends Thread {
                 if (responsesCount > (server.getClusterArray().length/ 2)) {
                   System.out.println("Lider eleito");
                   server.setCurrentState(serverState.LEADER);
-                  System.out.println("last term index: "+lastTermIndex);
-                  System.out.println("last term index + 1: "+lastTermIndex+1);
                   server.setCurrentTerm(((Integer) lastTermIndex) + 1);
                   System.out.println(server.getCurrentTerm());
-                  
                   server.quorumInvokeRPC("ADD","");
                   server.heartbeat.goOn();
                   oneTimeRun = false;

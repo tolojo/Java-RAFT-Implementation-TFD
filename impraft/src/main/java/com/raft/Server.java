@@ -176,17 +176,14 @@ public class Server implements ServerInterface, Remote, Serializable {
   ) {
     try {
       if (term >= currentTerm) {
-        if (currentState == serverState.LEADER) {
-          if (leaderId != this.leaderId) {
+        if (currentState != serverState.LEADER) {
             currentState = serverState.FOLLOWER;
-            this.leaderId = leaderId;
-          }
+            timeoutThread.stopElection();
         }
-        //deve retornar o seu id(IP:PORT) juntamente com a resposta (wholeMessage)
         this.currentTerm = term;
         this.leaderId = leaderId;
+        
         int lastentry = this.lastLogIndex;
-
         votedFor = new serverAddress();
         System.out.println(wholeMessage);
         System.out.println("term: " + term);
@@ -206,11 +203,12 @@ public class Server implements ServerInterface, Remote, Serializable {
             if (
               wholeMessage.get(lastentry - 1).equals(message.get(lastentry - 1))
             ) {
+              commitCounter++;
               counter = counter + newRequestValue;
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
-              commitCounter++;
+
               if (commitCounter == 10) {
                 char lastlog = wholeMessage
                   .get(lastLogIndex - 1)
@@ -258,6 +256,35 @@ public class Server implements ServerInterface, Remote, Serializable {
   public String quorumInvokeRPC(String label, String data)
     throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
+    System.out.println(currentState);
+    if (!(currentState == serverState.LEADER)){
+      try {
+        System.out.println("leader IP: "+ leaderId.getIpAddress());
+    System.out.println("leader port: "+ leaderId.getPort());
+        ServerInterface request = (ServerInterface) Naming.lookup(
+                "rmi://" +
+                leaderId.getIpAddress() +
+                ":" +
+                leaderId.getPort() +
+                "/server"
+              );
+              
+              String responseAux =
+              request.quorumInvokeRPC(
+              label,data
+              );
+              System.out.println("redirected to leader");
+              return "redirected to leader";
+
+      } catch (MalformedURLException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (NotBoundException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+    
     if (!data.equals("")) {
       requestQuorumId += 1;
     }
@@ -289,7 +316,7 @@ public class Server implements ServerInterface, Remote, Serializable {
                 data,
                 label,
                 currentTerm,
-                leaderId,
+                id,
                 lastLogIndex,
                 commit
               );
@@ -376,7 +403,10 @@ public class Server implements ServerInterface, Remote, Serializable {
   ) {
     boolean responseF = false;
     boolean responseV = true;
-    if (term < currentTerm) {
+    if (term<=termAux){
+      return responseF;
+    }
+    if (term <currentTerm) {
       return responseF;
     }
     if (votedFor.getPort() == 0 || votedFor == candidateId) {
@@ -396,6 +426,9 @@ public class Server implements ServerInterface, Remote, Serializable {
     while (timeout < 10) {
       timeout = randomGen.nextInt(25);
     }
+  }
+  public void setLeaderId(serverAddress leaderId){
+    this.leaderId = leaderId;
   }
 
   public serverState getState() {

@@ -7,11 +7,12 @@ public class TimoutThread extends Thread {
   private Server server;
   private boolean isRunning;
   private int  timeout ;
-
+  ElectionThread election;
   
 
   public TimoutThread(Server server) {
     this.server = server;
+    election = new ElectionThread(server, this);
 }
 
 public void run(){
@@ -21,7 +22,7 @@ public void run(){
         waitUntilServerIsFollower();
         sleep(timeout);
         server.setCurrentState(serverState.CANDIDATE);
-       ElectionThread election = new ElectionThread(server, this);
+        
         election.start();
         isRunning = false;
         //server.election.goOn();
@@ -34,6 +35,9 @@ public void run(){
     }
     }
 
+}
+public void stopElection(){
+    election.stop();
 }
 private synchronized void waitUntilServerIsFollower() throws InterruptedException {
     while(server.getState()!= serverState.FOLLOWER){
