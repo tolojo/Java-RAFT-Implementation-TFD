@@ -21,9 +21,9 @@ public void run(){
         waitUntilServerIsFollower();
         sleep(timeout);
         server.setCurrentState(serverState.CANDIDATE);
-       ElectionThread election = new ElectionThread(server);
-    
+       ElectionThread election = new ElectionThread(server, this);
         election.start();
+        isRunning = false;
         //server.election.goOn();
         
       

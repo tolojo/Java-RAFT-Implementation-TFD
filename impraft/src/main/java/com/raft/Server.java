@@ -30,11 +30,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
+import org.json.*;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.json.*;
 
 public class Server implements ServerInterface, Remote, Serializable {
 
@@ -44,6 +43,7 @@ public class Server implements ServerInterface, Remote, Serializable {
   private ExecutorService executor;
   private serverAddress id;
   private ExecutorService connectorService = Executors.newFixedThreadPool(1);
+  private ExecutorService executorService = Executors.newFixedThreadPool(1);
   private String path;
   private ArrayList<String> exception = new ArrayList<String>();
   ArrayList<ArrayList> responses = new ArrayList<>();
@@ -111,8 +111,7 @@ public class Server implements ServerInterface, Remote, Serializable {
     timeoutThread.start();
     heartbeat = new HeartBeatThread(this);
     heartbeat.start();
-    election = new ElectionThread(this);
-    election.start();
+
     System.out.println(this.getState());
   }
 
@@ -137,7 +136,6 @@ public class Server implements ServerInterface, Remote, Serializable {
         clusterArray[i] =
           new serverAddress(splited[0], Integer.parseInt(splited[1]));
       }
-      
 
       // Regist this server
       registServer();
@@ -175,12 +173,11 @@ public class Server implements ServerInterface, Remote, Serializable {
     serverAddress leaderId,
     int lastLogIndex,
     boolean commit
-   
   ) {
     try {
       if (term >= currentTerm) {
-        if(currentState == serverState.LEADER){
-          if (leaderId != this.leaderId){
+        if (currentState == serverState.LEADER) {
+          if (leaderId != this.leaderId) {
             currentState = serverState.FOLLOWER;
             this.leaderId = leaderId;
           }
@@ -189,7 +186,7 @@ public class Server implements ServerInterface, Remote, Serializable {
         this.currentTerm = term;
         this.leaderId = leaderId;
         int lastentry = this.lastLogIndex;
-        
+
         votedFor = new serverAddress();
         System.out.println(wholeMessage);
         System.out.println("term: " + term);
@@ -205,23 +202,27 @@ public class Server implements ServerInterface, Remote, Serializable {
           return wholeMessage;
         }
         if (label.equals("ADD")) {
-          if (commit){
-            if (wholeMessage.get(lastentry-1).equals(message.get(lastentry-1))){
+          if (commit) {
+            if (
+              wholeMessage.get(lastentry - 1).equals(message.get(lastentry - 1))
+            ) {
               counter = counter + newRequestValue;
               newRequestValue = 0;
               System.out.println("commited");
               System.out.println("state machine state: " + counter);
               commitCounter++;
-              if(commitCounter == 10){
-                char lastlog = wholeMessage.get(lastLogIndex-1).charAt(wholeMessage.get(lastLogIndex-1).length()-1);
-                int logvalue = Integer.parseInt(""+lastlog);
-                snapshot("0:"+logvalue);
+              if (commitCounter == 10) {
+                char lastlog = wholeMessage
+                  .get(lastLogIndex - 1)
+                  .charAt(wholeMessage.get(lastLogIndex - 1).length() - 1);
+                int logvalue = Integer.parseInt("" + lastlog);
+                snapshot("0:" + logvalue);
               }
               return wholeMessage;
-            } else{
+            } else {
               newRequestValue = Integer.parseInt(newMsg);
-              wholeMessage.remove(lastLogIndex-1);
-              wholeMessage.add(id+":"+message.get(lastLogIndex-1));
+              wholeMessage.remove(lastLogIndex - 1);
+              wholeMessage.add(id + ":" + message.get(lastLogIndex - 1));
               System.out.println("Last log term altered");
             }
           }
@@ -238,7 +239,7 @@ public class Server implements ServerInterface, Remote, Serializable {
           } else {
             commit = true;
             newRequestValue = Integer.parseInt(newMsg);
-            wholeMessage.add(id+":"+newMsg);
+            wholeMessage.add(id + ":" + newMsg);
             setLastLogIndex(this.lastLogIndex + 1);
             return wholeMessage;
           }
@@ -251,18 +252,25 @@ public class Server implements ServerInterface, Remote, Serializable {
     }
   }
 
+  boolean majority = false;
+  int faltosos = 0;
+
   public String quorumInvokeRPC(String label, String data)
     throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
-    
-    if (!data.equals("")) {
-     requestQuorumId += 1;
-    }
-    
-    try {
-      
-      System.out.println(data);
 
+    if (!data.equals("")) {
+      requestQuorumId += 1;
+    }
+    if (!data.equals("")) {
+      if (majority == false) {
+        System.out.println("Nao existe maioria");
+        requestQuorumId--;
+        return "";
+      }
+    }
+    try {
+      System.out.println(data);
       for (int i = 0; i < clusterArray.length; i++) {
         serverAddress serverAux = clusterArray[i];
         new Thread(() -> {
@@ -286,20 +294,32 @@ public class Server implements ServerInterface, Remote, Serializable {
                 lastLogIndex,
                 commit
               );
-              if (commit) commit = false;
-              if(responseAux.size() < lastLogIndex){
+            if (commit) commit = false;
+            if (responseAux.size() < lastLogIndex) {
               int fLastIndex = responseAux.size();
               char[] mAux = wholeMessage.get(fLastIndex).toCharArray();
               System.out.println(mAux);
               String aux = "" + mAux[0];
-              String messageAux = "" +wholeMessage.get(fLastIndex).charAt(wholeMessage.get(fLastIndex).length()-1);
-              int idAux =  Integer.parseInt(aux);
+              String messageAux =
+                "" +
+                wholeMessage
+                  .get(fLastIndex)
+                  .charAt(wholeMessage.get(fLastIndex).length() - 1);
+              int idAux = Integer.parseInt(aux);
 
-              sendEntry(idAux, messageAux, serverAux, this, lastLogIndex, wholeMessage);
+              sendEntry(
+                idAux,
+                messageAux,
+                serverAux,
+                this,
+                lastLogIndex,
+                wholeMessage
+              );
             }
-              
+
             responsesQueue.enqueue(responseAux);
           } catch (RemoteException e) {
+            faltosos++;
             //e.printStackTrace();
           } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -311,6 +331,13 @@ public class Server implements ServerInterface, Remote, Serializable {
         })
           .start();
       }
+      if (faltosos >= 3) {
+        majority = false;
+        faltosos = 0;
+      } else {
+        majority = true;
+        faltosos = 0;
+      }
       new Thread(() -> {
         try {
           int responsesCount = 0;
@@ -318,12 +345,11 @@ public class Server implements ServerInterface, Remote, Serializable {
           while (true) {
             if (responsesCount > (clusterArray.length / 2)) {
               System.out.println("Respostas recolhidas");
-              if(!data.equals("")){
+              if (!data.equals("")) {
                 commit = true;
               }
-              
-              Thread.interrupted();
 
+              Thread.interrupted();
             }
             entry = responsesQueue.dequeue();
             responsesCount++;
@@ -334,12 +360,10 @@ public class Server implements ServerInterface, Remote, Serializable {
       })
         .start();
       return "";
-    
     } catch (Exception e) {
       e.printStackTrace();
     }
     return "";
-  
   }
 
   private serverAddress votedFor = new serverAddress();
@@ -374,7 +398,7 @@ public class Server implements ServerInterface, Remote, Serializable {
       timeout = randomGen.nextInt(25);
     }
   }
-  
+
   public serverState getState() {
     return currentState;
   }
@@ -415,7 +439,7 @@ public class Server implements ServerInterface, Remote, Serializable {
     return serverId;
   }
 
-  public serverAddress getId(){
+  public serverAddress getId() {
     return id;
   }
 
@@ -427,38 +451,62 @@ public class Server implements ServerInterface, Remote, Serializable {
     this.lastLogIndex = lastLogIndex;
   }
 
-  public void sendEntry(int id, String msg, serverAddress followerId, Server server, int lastLogIndex, ArrayList<String> leaderLog) throws InterruptedException{
-		try {
-			ArrayList<String> aux;
-			ServerInterface serverI = (ServerInterface) Naming.lookup(
-			      "rmi://" +
-			      followerId.getIpAddress() +
-			      ":" +
-			      followerId.getPort() +
-			      "/server"
-			    );
-				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, false);
-        TimeUnit.SECONDS.sleep(1);
-				aux = serverI.invokeRPC(id,leaderLog,msg,"ADD",server.getCurrentTerm(),server.getId(), lastLogIndex, true);
-        System.out.println("sending log: " + id+ " with mesage: "+msg);
-        
-				
+  public void sendEntry(
+    int id,
+    String msg,
+    serverAddress followerId,
+    Server server,
+    int lastLogIndex,
+    ArrayList<String> leaderLog
+  ) throws InterruptedException {
+    try {
+      ArrayList<String> aux;
+      ServerInterface serverI = (ServerInterface) Naming.lookup(
+        "rmi://" +
+        followerId.getIpAddress() +
+        ":" +
+        followerId.getPort() +
+        "/server"
+      );
+      aux =
+        serverI.invokeRPC(
+          id,
+          leaderLog,
+          msg,
+          "ADD",
+          server.getCurrentTerm(),
+          server.getId(),
+          lastLogIndex,
+          false
+        );
+      TimeUnit.SECONDS.sleep(1);
+      aux =
+        serverI.invokeRPC(
+          id,
+          leaderLog,
+          msg,
+          "ADD",
+          server.getCurrentTerm(),
+          server.getId(),
+          lastLogIndex,
+          true
+        );
+      System.out.println("sending log: " + id + " with mesage: " + msg);
+    } catch (MalformedURLException | RemoteException | NotBoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 
-		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-  public void snapshot(String lastIncludedTerm){
+  public void snapshot(String lastIncludedTerm) {
     commitCounter = 0;
     requestQuorumId = 0;
-    lastLogIndex = 1;    
+    lastLogIndex = 1;
     wholeMessage = new ArrayList<>();
     wholeMessage.add(lastIncludedTerm);
     JSONObject checkpoint = new JSONObject();
     checkpoint.put("Last_Included_Log_Value", lastIncludedTerm);
-    checkpoint.put("State_Machine_State", ""+counter);
+    checkpoint.put("State_Machine_State", "" + counter);
     System.out.println("Snapshot criado");
     try {
       FileWriter file = new FileWriter(path + File.separator + Snap_FileTemp);
@@ -466,50 +514,45 @@ public class Server implements ServerInterface, Remote, Serializable {
       file.close();
       Path oldFile = Paths.get(path + File.separator + Snap_FileTemp);
       Files.move(oldFile, oldFile.resolveSibling("snapshot"));
-    } 
-    catch (FileNotFoundException e) {
+    } catch (FileNotFoundException e) {
       System.err.println("Snapshot file not found");
       e.printStackTrace();
-    } 
-    catch (IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  public void initFromSnapshot(){
+  public void initFromSnapshot() {
     JSONParser parser = new JSONParser();
     File f = new File(path + File.separator + "snapshot");
     String data = "";
-    if (f.exists()){
+    if (f.exists()) {
       try (Scanner myReader = new Scanner(f)) {
         while (myReader.hasNextLine()) {
-           data = myReader.nextLine();
+          data = myReader.nextLine();
         }
-        
-        Object obj =  parser.parse(data);
-        JSONObject jsonObject = (JSONObject)obj;
-        
-        String Last_Included_Log_Value = (String)jsonObject.get("Last_Included_Log_Value");
-        String State_Machine_State = (String)jsonObject.get("State_Machine_State");
-        System.out.println("Snapshotlog: "+Last_Included_Log_Value);
-        System.out.println("State: "+ State_Machine_State);
+
+        Object obj = parser.parse(data);
+        JSONObject jsonObject = (JSONObject) obj;
+
+        String Last_Included_Log_Value = (String) jsonObject.get(
+          "Last_Included_Log_Value"
+        );
+        String State_Machine_State = (String) jsonObject.get(
+          "State_Machine_State"
+        );
+        System.out.println("Snapshotlog: " + Last_Included_Log_Value);
+        System.out.println("State: " + State_Machine_State);
         wholeMessage.remove(0);
         wholeMessage.add(Last_Included_Log_Value);
         counter = Integer.parseInt(State_Machine_State);
-      } catch (FileNotFoundException e) { 
+      } catch (FileNotFoundException e) {
         e.printStackTrace();
       } catch (ParseException e) {
         e.printStackTrace();
       }
-    }else{
+    } else {
       System.out.println("No snapshot file found");
     }
-
-
-
-
   }
-
-
-
 }

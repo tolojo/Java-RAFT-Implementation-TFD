@@ -19,11 +19,12 @@ public class ElectionThread extends Thread {
   private serverAddress candidateId;
   private int clastLogIndex;
   private int lastTermIndex;
-
+  private Thread thread;
   private int falhas =0;
 
-  public ElectionThread(Server server) {
+  public ElectionThread(Server server, Thread thread) {
     this.server = server;
+    this.thread = thread;
     candidateId = server.getId();
     clastLogIndex = server.getLastLogIndex();
     lastTermIndex = server.getCurrentTerm();
@@ -33,6 +34,7 @@ public class ElectionThread extends Thread {
   public void run() {
     while (isRunning) {
         try {
+          isRunning = false;
           waitUntilServerIsCandidate();
           System.out.println("entrei na election");
           System.out.println(server.getState());
@@ -60,14 +62,16 @@ public class ElectionThread extends Thread {
               continue;
             }
           }
+          if(falhas>=(server.getClusterArray().length/2)+1){
+            System.out.println(falhas);
+            System.out.println("Não existe a maioria");
+            this.stop();
+            thread.stop();
+            
+            
+          }
           new Thread(() -> {
             try {
-              if(falhas>=(server.getClusterArray().length/2)+1){
-                System.out.println("Não existe a maioria");
-                isRunning = false;
-                wait();
-              }
-
               int responsesCount = 0;
               boolean entry;
               boolean oneTimeRun = true;
