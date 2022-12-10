@@ -12,7 +12,7 @@ public class increaseBy {
           ServerInterface request = (ServerInterface) Naming.lookup(
             "rmi://" + server.getIpAddress() + ":" + server.getPort() + "/server"
           );
-          System.out.println("sending inreseby request of: " + x);
+          System.out.println("sending increaseby request of: " + x);
           request.quorumInvokeRPC("ADD",Integer.toString(x));
         } catch (Exception e) {
           e.printStackTrace();

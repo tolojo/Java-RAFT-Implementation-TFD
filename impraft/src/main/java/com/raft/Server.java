@@ -216,7 +216,7 @@ public class Server implements ServerInterface, Remote, Serializable {
                 int logvalue = Integer.parseInt("" + lastlog);
                 snapshot("0:" + logvalue);
               }
-              return wholeMessage;
+              
             } else {
               newRequestValue = Integer.parseInt(newMsg);
               wholeMessage.remove(lastLogIndex - 1);
@@ -545,6 +545,10 @@ public class Server implements ServerInterface, Remote, Serializable {
       file.write(checkpoint.toJSONString());
       file.close();
       Path oldFile = Paths.get(path + File.separator + Snap_FileTemp);
+      File f = new File(path + File.separator + "snapshot");
+      if(f.exists()){
+        f.delete();
+      }
       Files.move(oldFile, oldFile.resolveSibling("snapshot"));
     } catch (FileNotFoundException e) {
       System.err.println("Snapshot file not found");
