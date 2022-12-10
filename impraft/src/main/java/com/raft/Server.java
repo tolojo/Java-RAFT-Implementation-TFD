@@ -258,7 +258,6 @@ public class Server implements ServerInterface, Remote, Serializable {
   public String quorumInvokeRPC(String label, String data)
     throws RemoteException {
     BlockingQueue<ArrayList<String>> responsesQueue = new BlockingQueue<>(10);
-
     if (!data.equals("")) {
       requestQuorumId += 1;
     }

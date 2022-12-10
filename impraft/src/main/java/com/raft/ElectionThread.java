@@ -67,8 +67,6 @@ public class ElectionThread extends Thread {
             System.out.println("Não existe a maioria");
             this.stop();
             thread.stop();
-            
-            
           }
           new Thread(() -> {
             try {
