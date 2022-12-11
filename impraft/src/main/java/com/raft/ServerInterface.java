@@ -13,4 +13,5 @@ public interface ServerInterface extends Remote{
 	serverAddress leaderId, int lastLogIndex,boolean commit) throws RemoteException;
     public String quorumInvokeRPC(String label, String data) throws RemoteException;
     public boolean requestVoteRPC(int term, serverAddress candidateId, int lastLogIndex, int lastTermIndex) throws RemoteException;
+    public void receiveRequest(String label, String data)throws RemoteException;
 }

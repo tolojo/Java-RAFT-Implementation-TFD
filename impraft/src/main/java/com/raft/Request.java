@@ -1,10 +1,22 @@
 package com.raft;
 
 public class Request {
-    public int id;
-    public int value;
+    public String label;
+    public String data;
 
-    public Request(){}
+    public Request(String label, String data){
+        this.data = data;
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public String getData() {
+        return data;
+    }
+    
 
 
 }
