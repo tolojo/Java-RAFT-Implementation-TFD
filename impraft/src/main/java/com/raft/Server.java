@@ -363,6 +363,8 @@ public class Server implements ServerInterface, Remote, Serializable {
             if (commit)
               commit = false;
             if (responseAux.size() < lastLogIndex) {
+              System.out.println("resposne size: "+responseAux.size());
+              System.out.println("lastlogIndex: "+lastLogIndex);
               int fLastIndex = responseAux.size();
               char[] mAux = wholeMessage.get(fLastIndex).toCharArray();
               System.out.println(mAux);
@@ -551,7 +553,7 @@ public class Server implements ServerInterface, Remote, Serializable {
       aux = serverI.invokeRPC(
           id,
           leaderLog,
-          msg,
+          "",
           "ADD",
           server.getCurrentTerm(),
           server.getId(),
